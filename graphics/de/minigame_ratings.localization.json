@@ -1,0 +1,202 @@
+{
+  "asset_id": "minigame_ratings",
+  "language": "de",
+  "status": "localized",
+  "source_sha256": "bb85758084847bac798a116e4c2efe1cf8f0c37446a18c6a132657eaa3ad6b6b",
+  "output_sha256": "032580e56587540aa8b5b12b7e37b06076698b55bfed7afaa8c9f22155483ae0",
+  "labels": [
+    {
+      "source": "NICE",
+      "text": "NETT",
+      "rect": [
+        75,
+        8,
+        49,
+        16
+      ],
+      "style": "rating"
+    },
+    {
+      "source": "GREAT",
+      "text": "KLASSE",
+      "rect": [
+        59,
+        264,
+        68,
+        16
+      ],
+      "style": "rating"
+    },
+    {
+      "source": "GOOD",
+      "text": "GUT",
+      "rect": [
+        66,
+        520,
+        60,
+        16
+      ],
+      "style": "rating"
+    },
+    {
+      "source": "EXCELLENT",
+      "text": "EXZELLENT",
+      "rect": [
+        59,
+        776,
+        16,
+        16
+      ],
+      "style": "rating_z",
+      "retained_lettering": "EX?ELLENT; only third character changes"
+    }
+  ],
+  "method": "Deterministic masks extracted from source-font indexed pixels; nearest-neighbour scaling, original palette-index outlines. No generated artwork or external font.",
+  "glyph_sources": {
+    "A": {
+      "asset": "pokemon_types",
+      "rect": [
+        21,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "E": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "G": {
+      "asset": "pokemon_types",
+      "rect": [
+        100,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "K": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "L": {
+      "asset": "pokemon_types",
+      "rect": [
+        26,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "N": {
+      "asset": "pokemon_types",
+      "rect": [
+        1,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "S": {
+      "asset": "pokemon_types",
+      "rect": [
+        115,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "T": {
+      "asset": "pokemon_types",
+      "rect": [
+        78,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "U": {
+      "asset": "pokemon_types",
+      "rect": [
+        80,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "Z": {
+      "derived_from": [
+        "E",
+        "N"
+      ],
+      "transform": "source E bars and mirrored N interior diagonal; source N stem pixels at diagonal endpoints"
+    }
+  },
+  "unchanged": "Exact palette and dimensions; all pixels outside label rectangles; all source tilemaps, palette-bank/flip bits, unused tiles, scores, art and credits.",
+  "validation": {
+    "source_roundtrip": "passed",
+    "indexed_png_roundtrip": "passed",
+    "encode_asset": "passed",
+    "shared_tiles": "passed",
+    "changed_pixels": 2268,
+    "parts": [
+      {
+        "offset": "0x046C8F8",
+        "payload_bytes": 5440,
+        "compressed_bytes": 2692,
+        "original_capacity": 2735,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x0149F0C"
+        ],
+        "sha256": "8209b9c9848d6666d99ea434a89e5a8c78ddac7bdebde07c427a3322bbbf74a8"
+      }
+    ],
+    "lz77": "vram_safe=True; decompression roundtrip passed",
+    "encoded_tiles_render_roundtrip": "passed; virtual data only, no ROM written",
+    "unused_tiles": "all original bytes preserved",
+    "visual_inspection": "performed on generated native views and enlarged indexed crops",
+    "source_rom_sha256": "7aa25bbf568f7cfcf6ee1cf2e9e6ff637350b3d0705c2375cabb6baa7d9739f7"
+  },
+  "blocker": null,
+  "limitations": [
+    "Runtime reachability is inherited, not re-established; no in-game rendering tested."
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "asset_id": "title_press_start",
+  "language": "de",
+  "status": "localized",
+  "source_sha256": "92435d91bfc678c852cd947e21e2a1f0013320493f2b81a8cac6a32d110283e8",
+  "output_sha256": "d1bcdda98fdf7bed7c439c4267998873ed878be8fe8193bb8dc130236e740153",
+  "labels": [
+    {
+      "source": "PRESS",
+      "text": "DRÜCK",
+      "rect": [
+        75,
+        147,
+        41,
+        8
+      ],
+      "style": "title",
+      "retained_button_label": "START"
+    }
+  ],
+  "method": "Deterministic masks extracted from source-font indexed pixels; nearest-neighbour scaling, original palette-index outlines. No generated artwork or external font.",
+  "glyph_sources": {
+    "C": {
+      "asset": "pokemon_types",
+      "rect": [
+        17,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "D": {
+      "asset": "pokemon_types",
+      "rect": [
+        90,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "K": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "R": {
+      "asset": "pokemon_types",
+      "rect": [
+        11,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "Ü": {
+      "derived_from": [
+        "U",
+        "."
+      ],
+      "transform": "two copies of original full-stop pixel above unchanged base glyph"
+    }
+  },
+  "unchanged": "Exact palette and dimensions; all pixels outside label rectangles; all source tilemaps, palette-bank/flip bits, unused tiles, scores, art and credits.",
+  "validation": {
+    "source_roundtrip": "passed",
+    "indexed_png_roundtrip": "passed",
+    "encode_asset": "passed",
+    "shared_tiles": "passed",
+    "changed_pixels": 70,
+    "parts": [
+      {
+        "offset": "0x1fd4854",
+        "payload_bytes": 29376,
+        "compressed_bytes": 7360,
+        "original_capacity": 7360,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x1ed7ec0"
+        ],
+        "sha256": "ae6a5d89ce46d907dfb30186fff6086985da90d589dbcc2739245fe4e2e17ff8"
+      }
+    ],
+    "lz77": "vram_safe=True; decompression roundtrip passed",
+    "encoded_tiles_render_roundtrip": "passed; virtual data only, no ROM written",
+    "unused_tiles": "all original bytes preserved",
+    "visual_inspection": "performed on generated native views and enlarged indexed crops",
+    "source_rom_sha256": "7aa25bbf568f7cfcf6ee1cf2e9e6ff637350b3d0705c2375cabb6baa7d9739f7"
+  },
+  "blocker": null,
+  "limitations": [
+    "Runtime reachability is inherited, not re-established; no in-game rendering tested."
+  ]
+}

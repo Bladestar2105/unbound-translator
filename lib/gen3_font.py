@@ -28,7 +28,7 @@ NORMAL_GLYPH_WIDTHS = (
 RUNTIME_BUFFER_WIDTH = 54
 
 
-def text_pixel_width(text: str, cmap: Charmap | None = None) -> int:
+def text_pixel_width(text: str, cmap: Charmap | None = None, runtime_widths: dict[int, int] | None = None) -> int:
     """Return the rendered width of one line, ignoring layout/control bytes."""
     cmap = cmap or Charmap("it")
     encoded = cmap.encode(text)
@@ -46,7 +46,8 @@ def text_pixel_width(text: str, cmap: Charmap | None = None) -> int:
             index += 1 + fc_arg_count(command)
             continue
         if byte == 0xFD:
-            width += RUNTIME_BUFFER_WIDTH
+            arg = encoded[index] if index < len(encoded) else -1
+            width += (runtime_widths or {}).get(arg, RUNTIME_BUFFER_WIDTH)
             index += 1
             continue
         if byte in {0xFA, 0xFB, 0xFE}:

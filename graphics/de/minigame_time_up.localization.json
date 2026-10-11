@@ -1,0 +1,177 @@
+{
+  "asset_id": "minigame_time_up",
+  "language": "de",
+  "status": "localized",
+  "source_sha256": "b71f04edbcf4d3d469883308ea843053d4804ca0580d76309d9b85626fc49c3d",
+  "output_sha256": "e2cd38d4f7861dedb636738523217252743b9520e9d5b955922f1d284236eb2a",
+  "labels": [
+    {
+      "source": "Time Up!",
+      "text": "ABGELAUFEN!",
+      "rect": [
+        0,
+        0,
+        128,
+        32
+      ],
+      "style": "prompt",
+      "sx": 2
+    }
+  ],
+  "method": "Deterministic masks extracted from source-font indexed pixels; nearest-neighbour scaling, original palette-index outlines. No generated artwork or external font.",
+  "glyph_sources": {
+    "!": {
+      "asset": "minigame_finish",
+      "rect": [
+        98,
+        3,
+        6,
+        21
+      ],
+      "foreground_indices": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "transform": "nearest-neighbour 2x7 mask"
+    },
+    "A": {
+      "asset": "pokemon_types",
+      "rect": [
+        21,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "B": {
+      "asset": "pokemon_types",
+      "rect": [
+        104,
+        50,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "E": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "F": {
+      "asset": "pokemon_types",
+      "rect": [
+        39,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "G": {
+      "asset": "pokemon_types",
+      "rect": [
+        100,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "L": {
+      "asset": "pokemon_types",
+      "rect": [
+        26,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "N": {
+      "asset": "pokemon_types",
+      "rect": [
+        1,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "U": {
+      "asset": "pokemon_types",
+      "rect": [
+        80,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    }
+  },
+  "unchanged": "Exact palette and dimensions; all pixels outside label rectangles; all source tilemaps, palette-bank/flip bits, unused tiles, scores, art and credits.",
+  "validation": {
+    "source_roundtrip": "passed",
+    "indexed_png_roundtrip": "passed",
+    "encode_asset": "passed",
+    "shared_tiles": "passed",
+    "changed_pixels": 2261,
+    "parts": [
+      {
+        "offset": "0x1FCC5C0",
+        "payload_bytes": 1024,
+        "compressed_bytes": 352,
+        "original_capacity": 404,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x1FB5174"
+        ],
+        "sha256": "0dfd769e01472ead634c01e9bf275bd592e2c2585b36ec1c6b5c2da35a4408cf"
+      },
+      {
+        "offset": "0x1FCC754",
+        "payload_bytes": 1024,
+        "compressed_bytes": 324,
+        "original_capacity": 482,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x1FB517C"
+        ],
+        "sha256": "3fc25348689f83ddc2db2e21fa1f1d21551041b29acfef488986ae2cd03dccc6"
+      }
+    ],
+    "lz77": "vram_safe=True; decompression roundtrip passed",
+    "encoded_tiles_render_roundtrip": "passed; virtual data only, no ROM written",
+    "unused_tiles": "all original bytes preserved",
+    "visual_inspection": "performed on generated native views and enlarged indexed crops",
+    "source_rom_sha256": "7aa25bbf568f7cfcf6ee1cf2e9e6ff637350b3d0705c2375cabb6baa7d9739f7"
+  },
+  "blocker": null,
+  "limitations": [
+    "Runtime reachability is inherited, not re-established; no in-game rendering tested."
+  ]
+}

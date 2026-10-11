@@ -9,6 +9,7 @@ from bisect import bisect_left
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from lib.graphics_patcher import patch_graphics
 from lib.pcs_text import Charmap, decode_pcs, fc_arg_count, strip_control_tokens
 from lib.translation_tokens import semantic_token_counts
 from lib.unbound_free_space import VETTED_FREE_SPACE_RANGES
@@ -20,20 +21,18 @@ DEFAULT_FREE_RUN_MARGIN = 8
 DEFAULT_TEXT_ALIGNMENT = 1
 # These FF runs contain engine-owned graphics or CFRU/Unbound reserved data.
 FREE_SPACE_EXCLUDE_RANGES = (
-    # Referenced engine-owned FF storage. The known-working French build also
-    # leaves this run untouched; treating it as text space breaks scripted
-    # party-selection battle handoff.
-    (0x16586A, 0x166C9A),
-    # Its tail has a live ROM pointer into it. Reserve the whole small run
-    # instead of relying on a partially safe prefix.
-    (0x19A837, 0x19B86A),
+    # Legacy BPRE text and engine area: contains live engine pointers and function calls
+    (0x160000, 0x200000),
     (0x230000, 0x500000),
-    (0x1000000, 0x1FE0000),
+    # High expansion bank: CFRU engine, hooks, and dynamic data
+    (0x1000000, 0x2000000),
 )
 TERMINATOR = 0xFF
 ABILITY_DESCRIPTION_MAX_BYTES = 46
 RECLAIMABLE_SCRIPT_TEXT_RANGES = (
-    (0x1EE0000, 0x1FB0000),
+    (0x740000, 0x800000),
+    (0x8C0000, 0x8D0000),
+    (0x1ED0000, 0x1FB0000),
 )
 RECLAIMED_DESTINATION_CATEGORIES = frozenset({"scripts", "plain_scripts"})
 
@@ -123,11 +122,10 @@ def normalize_plain_script_layout(text):
             pieces.append("\\n")
             index += 1
             continue
-        if text.startswith("\\pn", index):
-            pieces.append("\\n\\n")
-            index += 3
-            continue
-        if text.startswith("\\p", index) and not text.startswith("\\pk", index):
+        if text.startswith("\\p", index) and not (
+            text.startswith("\\pk", index)
+            and (index + 3 >= len(text) or not text[index + 3].isalpha() or text[index + 3] == "\\")
+        ):
             pieces.append("\\n\\n")
             index += 2
             continue
@@ -333,7 +331,17 @@ def build_free_blocks(rom, entries, min_run, min_address, allowed_ranges=None):
     # generic minimum-run heuristic would otherwise hide them.
     scan_min_len = 1 if allowed_ranges is not None else min_run
     runs = find_byte_runs(rom, 0xFF, scan_min_len, min_address)
-    runs = subtract_ranges(runs, FREE_SPACE_EXCLUDE_RANGES)
+    exclude_ranges = (
+        FREE_SPACE_EXCLUDE_RANGES
+        if allowed_ranges is None
+        else (
+            (0x160000, 0x200000),
+            (0x230000, 0x500000),
+            (0x1000000, 0x1FE0000),
+            (0x1FF3000, 0x2000000),
+        )
+    )
+    runs = subtract_ranges(runs, exclude_ranges)
     protected = protected_entry_ranges(entries, len(rom), min_address)
     runs = subtract_ranges(runs, protected)
     runs = [
@@ -346,6 +354,25 @@ def build_free_blocks(rom, entries, min_run, min_address, allowed_ranges=None):
         runs = intersect_ranges(runs, allowed_ranges)
     runs.sort()
     return [FreeBlock(start, end, start) for start, end in runs]
+
+
+def allocate_best_fit(blocks, size, alignment=1):
+    best_idx = None
+    best_waste = float("inf")
+    best_offset = None
+    for i, block in enumerate(blocks):
+        aligned = align_up(block.cursor, alignment)
+        if aligned + size <= block.end:
+            waste = (block.end - block.cursor) - size
+            if waste < best_waste:
+                best_waste = waste
+                best_idx = i
+                best_offset = aligned
+    if best_idx is not None:
+        block = blocks[best_idx]
+        block.cursor = best_offset + size
+        return best_offset, block
+    return None, None
 
 
 def allocate_with_block(blocks, size, alignment):
@@ -485,12 +512,13 @@ def plausible_pointer_source(rom, source):
     """Reject raw pointer-scan matches that would overwrite code or live data."""
     return (
             source % 4 == 0
+            or (0x23E558 <= source < 0x23EAC8 and (source - 0x23E558) % 13 == 0)
             or (source >= 1 and rom[source - 1] == 0x9B)
             or (source >= 2 and rom[source - 2] == 0x0F and rom[source - 1] == 0x00)
             or (source >= 2 and rom[source - 2] == 0x85 and rom[source - 1] <= 0x0F)
             or (source >= 1 and rom[source - 1] == 0x67)
-            or (source >= 6 and rom[source - 6] == 0x5C)
-            or (source >= 10 and rom[source - 10] == 0x5C)
+            or is_trainerbattle_text_pointer_source(rom, source)
+            or (source >= 1 and rom[source - 1] == 0x02 and 0x8B0000 <= source < 0x970000)
             or is_ewram_word(rom, source - 4)
     )
 
@@ -507,7 +535,7 @@ def is_duplicate_slot(entry, seen_slots):
 
 
 def should_relocate_pointer_entry(entry, encoded, policy):
-    if entry.get("no_relocation"):
+    if entry.get("no_relocation") or entry.get("category") == "pointer_texts":
         return False
     if not pointer_sources(entry):
         return False
@@ -603,6 +631,16 @@ def collect_relocation_candidates(
     return candidates, skipped
 
 
+def is_trainerbattle_text_pointer_source(rom, source):
+    if source >= 6 and rom[source - 6] == 0x5C and rom[source - 5] in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15):
+        return True
+    if source >= 10 and rom[source - 10] == 0x5C and rom[source - 9] in (0, 4, 5, 6, 7, 8, 9, 13, 14):
+        return True
+    if source >= 14 and rom[source - 14] == 0x5C and rom[source - 13] in (6, 8, 14):
+        return True
+    return False
+
+
 def is_explicit_script_message_source(rom, source):
     """Require an opcode shape that unambiguously consumes a text pointer."""
     if (
@@ -613,11 +651,13 @@ def is_explicit_script_message_source(rom, source):
         and 0x02 <= rom[source + 5] <= 0x06
     ):
         return True
-    return (
+    if (
         source >= 1
         and rom[source - 1] == 0x67
         and (source >> 20) == 0x1E
-    )
+    ):
+        return True
+    return is_trainerbattle_text_pointer_source(rom, source)
 
 
 def discover_raw_rom_pointers(rom, minimum_target, maximum_target):
@@ -873,10 +913,12 @@ def plan_relocations(
     reclaimed_blocks=None,
     reclaimed_categories=RECLAIMED_DESTINATION_CATEGORIES,
     reclaimed_entry_ids=None,
+    reclaimed_owner_ids=None,
 ):
     """Allocate unique payloads, reserving vetted space for restricted texts."""
     reclaimed_blocks = reclaimed_blocks or []
     reclaimed_entry_ids = set(reclaimed_entry_ids or ())
+    reclaimed_owner_ids = set(reclaimed_owner_ids or ()) if reclaimed_owner_ids is not None else None
 
     def can_use_reclaimed(candidate):
         return (
@@ -884,20 +926,25 @@ def plan_relocations(
             or candidate.entry.get("id") in reclaimed_entry_ids
         )
 
-    # Vetted FF accepts every relocation candidate; reclaimed old text slots
-    # intentionally accept only explicit scripts or independently proven IDs.
-    # Plan restricted candidates first so reclaim-eligible scripts cannot
-    # consume the only storage available to heuristic pointer discoveries.
-    reclaimed_priority_ids = set(reclaimed_entry_ids)
+    def priority(candidate, index):
+        cat_reclaim = can_use_reclaimed(candidate)
+        is_owner = (
+            reclaimed_owner_ids is not None
+            and candidate.entry.get("id") in reclaimed_owner_ids
+        )
+        length = len(candidate.encoded)
+        if not cat_reclaim:
+            return (0, index)
+        elif is_owner:
+            return (1, -length, index)
+        else:
+            return (2, -length, index)
+
     ordered_candidates = [
         candidate
         for _index, candidate in sorted(
             enumerate(candidates),
-            key=lambda item: (
-                can_use_reclaimed(item[1]),
-                item[1].entry.get("id") not in reclaimed_priority_ids,
-                item[0],
-            ),
+            key=lambda item: priority(item[1], item[0]),
         )
     ]
     plan = {}
@@ -918,13 +965,15 @@ def plan_relocations(
         if missing_key in missing_payloads:
             missing.append(candidate)
             continue
-        offset, block = allocate_with_block(blocks, len(candidate.encoded), alignment)
-        if offset is None and candidate_can_use_reclaimed:
-            offset, block = allocate_with_block(
+        offset, block = None, None
+        if candidate_can_use_reclaimed:
+            offset, block = allocate_best_fit(
                 reclaimed_blocks,
                 len(candidate.encoded),
                 alignment,
             )
+        if offset is None:
+            offset, block = allocate_best_fit(blocks, len(candidate.encoded), alignment)
         if offset is None:
             missing_payloads.add(missing_key)
             missing.append(candidate)
@@ -986,6 +1035,11 @@ def main():
     parser.add_argument("json", help="Translations JSON")
     parser.add_argument("-o", "--output", default="hybrid-patched.gba", help="Output GBA ROM")
     parser.add_argument("--target-lang", default="it", help="Target language hint for text cleanup")
+    parser.add_argument(
+        "--graphics-dir",
+        default="graphics",
+        help="Path to graphics directory with manifest.json and localized folders. Default: graphics",
+    )
     parser.add_argument(
         "--min-free-run",
         default=hex(DEFAULT_MIN_FREE_RUN),
@@ -1113,6 +1167,14 @@ def main():
         args.target_lang.lower(),
         patch_context,
     )
+    graphics_patches = patch_graphics(
+        rom,
+        Path(args.graphics_dir),
+        args.target_lang.lower(),
+        free_blocks,
+        dry_run=args.dry_run,
+        fail_on_no_space=args.fail_on_no_space,
+    )
 
     candidates, relocation_skips = collect_relocation_candidates(
         rom,
@@ -1137,13 +1199,15 @@ def main():
             FreeBlock(block.start, block.end, block.cursor, block.kind)
             for block in reclamation_base_blocks
         ]
+        all_reclaimed_blocks, all_reclaimed_owner_ids = (
+            # Ownership evidence must not depend on localized graphics/runtime bytes.
+            build_reclaimed_script_text_blocks(source_rom, candidates, entries)
+        )
         preliminary_plan, _preliminary_missing = plan_relocations(
             vetted_blocks,
             candidates,
             args.alignment,
-        )
-        all_reclaimed_blocks, all_reclaimed_owner_ids = (
-            build_reclaimed_script_text_blocks(rom, candidates, entries)
+            reclaimed_owner_ids=all_reclaimed_owner_ids,
         )
         vetted_reclaimed_owner_ids = {
             entry_id
@@ -1165,6 +1229,7 @@ def main():
             )
         reclaimed_consumer_ids = reference_proven_ids | table_proven_ids
         active_owner_ids = set(vetted_reclaimed_owner_ids)
+        seen_active = {frozenset(active_owner_ids)}
         while True:
             trial_free_blocks = [
                 FreeBlock(block.start, block.end, block.cursor, block.kind)
@@ -1182,20 +1247,44 @@ def main():
                 candidates,
                 args.alignment,
                 trial_reclaimed_blocks,
-                reclaimed_entry_ids=(active_owner_ids | reclaimed_consumer_ids),
+                reclaimed_entry_ids=reclaimed_consumer_ids,
+                reclaimed_owner_ids=all_reclaimed_owner_ids,
             )
             next_owner_ids = all_reclaimed_owner_ids.intersection(trial_plan)
-            if next_owner_ids == active_owner_ids:
-                free_blocks = trial_free_blocks
-                reclaimed_blocks = trial_reclaimed_blocks
-                reclaimed_owner_ids = trial_owner_ids
-                relocation_plan = trial_plan
-                missing_candidates = trial_missing
+            frozen_next = frozenset(next_owner_ids)
+            if next_owner_ids == active_owner_ids or frozen_next in seen_active:
+                curr_owners = next_owner_ids
+                for _ in range(10):
+                    final_reclaimed_blocks, final_owner_ids = (
+                        select_reclaimed_script_text_blocks(
+                            all_reclaimed_blocks,
+                            candidates,
+                            curr_owners,
+                        )
+                    )
+                    final_free_blocks = [
+                        FreeBlock(block.start, block.end, block.cursor, block.kind)
+                        for block in reclamation_base_blocks
+                    ]
+                    final_plan, final_missing = plan_relocations(
+                        final_free_blocks,
+                        candidates,
+                        args.alignment,
+                        final_reclaimed_blocks,
+                        reclaimed_entry_ids=reclaimed_consumer_ids,
+                        reclaimed_owner_ids=all_reclaimed_owner_ids,
+                    )
+                    successful_owners = final_owner_ids.intersection(final_plan.keys())
+                    if successful_owners == final_owner_ids:
+                        break
+                    curr_owners = successful_owners
+                free_blocks = final_free_blocks
+                reclaimed_blocks = final_reclaimed_blocks
+                reclaimed_owner_ids = final_owner_ids
+                relocation_plan = final_plan
+                missing_candidates = final_missing
                 break
-            if not next_owner_ids.issuperset(active_owner_ids):
-                raise RuntimeError(
-                    "Reclaimed-slot ownership expansion was not monotonic"
-                )
+            seen_active.add(frozen_next)
             active_owner_ids = next_owner_ids
     else:
         relocation_plan, missing_candidates = plan_relocations(
@@ -1283,6 +1372,7 @@ def main():
         "ability_descriptions_compacted": 0,
         "ability_description_bytes_removed": 0,
         "runtime_patches": len(runtime_patches),
+        "graphics_patches": len(graphics_patches),
     }
 
     relocation_map = []
@@ -1298,12 +1388,13 @@ def main():
             stats["skipped_runtime_patch"] += 1
             continue
 
-        translated = translation_for_injection(entry)
-        full_translation = strip_hma_quotes(entry.get("translated", ""))
-        if not translated:
+        raw_trans = entry.get("translated")
+        if raw_trans is None:
             stats["skipped_empty"] += 1
             continue
 
+        translated = translation_for_injection(entry)
+        full_translation = strip_hma_quotes(raw_trans)
         original = strip_hma_quotes(entry.get("original", ""))
         if full_translation == original:
             stats["unchanged"] += 1
@@ -1527,6 +1618,7 @@ def main():
             ],
             "missing_fixed_slots": missing_fixed_slots,
             "runtime_patches": runtime_patches,
+            "graphics_patches": graphics_patches,
         }
         report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
@@ -1586,6 +1678,10 @@ def main():
     print(f"Ability desc compacted : {stats['ability_descriptions_compacted']}")
     print(f"Ability bytes removed  : {stats['ability_description_bytes_removed']}")
     print(f"Runtime patches        : {stats['runtime_patches']}")
+    print(f"Graphics patches       : {stats['graphics_patches']}")
+    if graphics_patches:
+        for gp in graphics_patches:
+            print(f"  [{gp['status']}] {gp['id']} -> {gp['injected_offset']} ({gp['bytes']}B)")
     if truncation_samples:
         print("Fixed truncation sample:")
         for sample in truncation_samples:

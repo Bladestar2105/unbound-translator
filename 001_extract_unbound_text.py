@@ -62,6 +62,17 @@ STRUCTURED_TEXT_POINTER_RANGES = (
 ALIGNED_POINTER_TEXT_EXCLUDED_TARGET_RANGES = (
     (0x23EAC8, 0x246E00),
 )
+# These aligned words occur inside live Thumb instruction streams.  Their
+# little-endian bytes happen to equal a GBA pointer to 0x489906, but rewriting
+# them corrupts executable code (for example, 06 99 48 08 is ``ldr; lsrs``).
+ALIGNED_POINTER_TEXT_EXCLUDED_SOURCES = {
+    0x3F2B0,
+    0x8BBBC8,
+    0x8BBC70,
+    # An unproven interior Flash-description alias overlaps its bounded owner.
+    0x52FF70,
+    0x1CD2064,  # Unproven interior Torment-message alias; the table owns the full text.
+}
 MISSION_NAME_POINTER_SOURCES = {
     0x1EC02E8,  # A Hero/Heroine's Journey Mission Log title variants
     0x1EC02F0,
@@ -95,7 +106,6 @@ class FixedTable:
     slot_size: int
     stride: int | None = None
     pointer_name: bool = False
-    substring_name: bool = False
 
 
 @dataclass(frozen=True)
@@ -114,6 +124,7 @@ class PointerTable:
     count: int
     stride: int = 4
     merge_duplicates: bool = False
+    skip_nulls: bool = False
 
 
 @dataclass(frozen=True)
@@ -125,6 +136,7 @@ class ManualTextRange:
 
 
 FIXED_TABLES = [
+    FixedTable("berry_names", "data.berries.namePrefixes", 0x3DF7E8, 43, 7, 28),
     FixedTable("pokemon_names", "data.pokemon.names", 0x166A98C, 1294, 11),
     FixedTable("type_names", "data.pokemon.type.names", 0xA4EAD4, 24, 7),
     FixedTable("item_names", "data.items.stats", 0x876200, 729, 13, 44, pointer_name=True),
@@ -138,8 +150,9 @@ FIXED_TABLES = [
         0x23E558,
         107,
         13,
-        substring_name=True,
+        pointer_name=True,
     ),
+    FixedTable("trainer_names", "data.trainers.names", 0x23EACC, 743, 12, stride=40),
 ]
 
 SEQUENTIAL_TABLES = [
@@ -198,6 +211,52 @@ POINTER_TABLES = [
     ),
 ]
 
+# EasyChatWordInfo records contain text/rank/enabled words; Pokemon and move
+# groups instead contain species/move IDs and must not be treated as pointers.
+POINTER_TABLES += [
+    PointerTable("easy_chat_words", f"data.easyChat.words.{group}", start, count, 12)
+    for group, start, count in (
+        (1, 0x3E7FE0, 26), (2, 0x3E8504, 109), (3, 0x3E8BF4, 63),
+        (4, 0x3E9034, 42), (5, 0x3E93F0, 75), (6, 0x3E98D8, 63),
+        (7, 0x3E9D6C, 60), (8, 0x3EA1B4, 69), (9, 0x3EA6D4, 69),
+        (10, 0x3EAC00, 69), (11, 0x3EB138, 78), (12, 0x3EB628, 45),
+        (13, 0x3EB9C0, 54), (14, 0x3EBD7C, 45), (15, 0x3EC0A4, 42),
+        (16, 0x3EC3BC, 36), (17, 0x3EC644, 28), (20, 0x3ECB50, 33),
+    )
+]
+POINTER_TABLES.append(PointerTable(
+    "menu_list_labels", "data.menus.typeSelection.labels", 0x456E74, 18, 8,
+))
+
+POINTER_TABLES += [
+    PointerTable("menu_list_labels", f"data.menus.namedChoices.{name}", start, count)
+    for name, start, count in (
+        ("valuables", 0x2372C0, 8), ("food", 0x237400, 16),
+        ("fossils", 0x237584, 11), ("rotomAppliances", 0x238D00, 7),
+    )
+]
+
+POINTER_TABLES += [
+    PointerTable("menu_link_controls", "data.link.activityNames", 0x456C78, 12),
+    PointerTable("menu_link_controls", "data.link.activityNames", 0x456CC8, 2),
+    PointerTable("battle_messages", "data.battle.typeMoveFragments", 0x3FEA28, 18),
+]
+
+POINTER_TABLES.append(PointerTable(
+    "move_names", "data.pokemon.zMoves.names", 0x9A230C, 53, merge_duplicates=True,
+))
+# Only speech operands belong to these CFRU records, not trainer metadata/spreads.
+POINTER_TABLES += [
+    PointerTable("trainer_dialogue", f"data.battleFrontier.{group}.{field}",
+                 base + offset, count, stride, skip_nulls=True)
+    for group, base, count, stride, offsets in (
+        ("brains", 0xA6F130, 11, 52, (12, 16, 20)),
+        ("specialTrainers", 0xA6F36C, 10, 52, (12, 16, 20)),
+        ("towerTrainers", 0xA6F574, 154, 20, (8, 12, 16)),
+    )
+    for field, offset in zip(("intro", "win", "lose"), offsets)
+]
+
 DEFAULT_MENU_AUDIT_STRINGS = [
     "SAVING.",
     "DON'T TURN OFF THE POWER",
@@ -254,6 +313,23 @@ DEFAULT_MENU_AUDIT_STRINGS = [
 ]
 
 MANUAL_TEXT_TABLES = {
+    "battle_messages": (
+        "data.battle.text.cfruMessages",
+        [
+            0x905690,
+            0x9056B4,
+            0x905770,
+            0x905A30,
+            0x905A50,
+            0x905C25,
+            0x905C40,
+            0x905E9A,
+            0x906470,
+            0x9064A0,
+            0x906520,
+            0x906540,
+        ],
+    ),
     "menu_pokedex": (
         "data.menus.text.pokedex.controls",
         [0x415FAD],  # \btn04Cry; two summary-page pointer owners
@@ -621,7 +697,64 @@ MANUAL_TEXT_TABLES = {
 # Valid pointers whose owning records are intentionally byte-packed rather
 # than 4-byte aligned. The generic source predicate cannot prove these, so
 # their manually identified text owners must preserve them explicitly.
+# These literal pools feed verified EOS-driven native text printers/copy calls.
+MANUAL_TEXT_TABLES["menu_common"][1].extend([
+    0xA43A50, 0xA43A87, 0x41CB49, 0x415D97, 0x415A97, 0x41EDBD,
+    0x416002, 0x415FED, 0x793D11,
+])
+MANUAL_TEXT_TABLES["menu_pokemon_summary"] = (
+    "data.menus.text.summaryControls", [0x419C7B, 0x419C62]
+)
+MANUAL_TEXT_TABLES["menu_battle"][1].extend([
+    0xA4CB9D, 0xA4CBC0, 0xA4CBD0, 0xA4CBDE, 0xA4CBF3, 0xA4CC47,
+    0xA4CCB4, 0xA4CD02, 0xA4CD0C, 0xA4CD20, 0xA4CC0B, 0xA4CD44,
+    0xA4CD7A, 0xA4CD87, 0xA4CD94, 0xA4CB27, 0xA4CB3B, 0xA4CB72,
+    0xA4CB1C, 0xA4CB0C,
+])
+MANUAL_TEXT_TABLES["menu_battle"][1].extend([0xA4CB06, 0xA4CC7A, 0xA4CDA2])
+
 MANUAL_TEXT_POINTER_SOURCES = {
+    0x41cb49: [0x13ba08],
+    0x419c7b: [0x137da0],
+    0x419c62: [0x137d80],
+    0x415d97: [0x12ff9c],
+    0x415a97: [0xc9bc],
+    0x41edbd: [0x1423b0],
+    0x416002: [0x104f08],
+    0x415fed: [0x106470],
+    0x793d11: [0x78a15a, 0x78a178],
+    0xa4cb9d: [0x9fa374],
+    0xa4cbc0: [0x9fa388],
+    0xa4cbd0: [0x9fa390],
+    0xa4cbde: [0x9fa39c],
+    0xa4cbf3: [0x9fa3a8],
+    0xa4cc47: [0x9fa3b4],
+    0xa4ccb4: [0x9fa3cc],
+    0xa4cd02: [0x9fa3dc],
+    0xa4cd0c: [0x9fa3e0],
+    0xa4cd20: [0x9fa3e4],
+    0xa4cc0b: [0x9fa3e8],
+    0xa4cd44: [0x9fa3f0],
+    0xa4cd7a: [0x9fa3f8],
+    0xa4cd87: [0x9fa400],
+    0xa4cd94: [0x9fa404],
+    0xa4cb27: [0x9f9f5c],
+    0xa4cb3b: [0x9f9f98],
+    0xa4cb72: [0x9f9fa4],
+    0xa4cb1c: [0x9fa41c],
+    0xa4cb0c: [0x9fa434],
+    0xA43A50: [0x9D63A0],  # DexNav encounter method WindowPrint literals.
+    0xA43A87: [0x9D63B0],
+    0xA4CB06: [0x9FA42C],  # Move-details/effects StringCopy literals.
+    0xA4CC7A: [0x9FA3BC],
+    0xA4CDA2: [0x9FA408],
+    0x961B50: [0x309C8],  # Normal also belongs to the type-name renderer.
+    0x459360: [0x456E14, 0x456E4C],  # Exit is shared by adjacent menu records.
+    # Starter confirmation buffers use packed ``0x85 0x01 <text pointer>``
+    # commands. Dragon's pointer is aligned and found generically, while the
+    # adjacent Rock and Steel owners are unaligned and must be kept explicit.
+    0x1F97855: [0x1E90527],  # Rock / Larvitar confirmation
+    0x1F97864: [0x1E90546],  # Steel / Beldum confirmation
     0x75CE9A: [0x75CD61],  # Easy
     0x75CEA6: [0x75CDAF],  # Hard
     0x77F57B: [0x751F69],
@@ -631,6 +764,7 @@ MANUAL_TEXT_POINTER_SOURCES = {
     0x78922B: [0x7522B9],
     0x78922E: [0x7522C0, 0x7BD1B0, 0x7BD1B6],
     0x789232: [0x7522C6],
+    0x78DA8E: [0x78A3E6],
     0x793FCB: [0x76D292, 0x7D98BF],
     0x7A89DE: [0x762BF9],
     0x7A89E3: [0x762BF2],
@@ -640,6 +774,7 @@ MANUAL_TEXT_POINTER_SOURCES = {
     0x7DE1E1: [0x7D98C5],
     0x7DE1E5: [0x7D98D2],
     0x8CE1F8: [0x8CD595],
+    0x9665B0: [0x9662E1, 0x966319, 0x966377],  # \13's aura flared to life!
     0x1EE1185: [0x1E55982],
     0x1EEAF9C: [0x1E57421],
     0x1EEAFA5: [0x1E57515],
@@ -743,14 +878,19 @@ POST_POINTER_MANUAL_TEXT_RANGES = [
     ManualTextRange("mission_log", "data.menus.text.missionLog.menu", 0x1F56040, 0x1F56117),
     ManualTextRange("battle_messages", "data.battle.text.messages.expAndFaint", 0x3FB248, 0x3FB4F7),
     ManualTextRange("battle_messages", "data.battle.text.messages.effectiveness.legacy", 0x800880, 0x800896),
+    ManualTextRange("battle_messages", "data.battle.text.messages.statQualityLegacy", 0x883590, 0x8835AA),
     ManualTextRange("battle_messages", "data.battle.text.messages.escape.legacy", 0x9066D0, 0x9066EA),
     ManualTextRange("battle_messages", "data.battle.text.messages.pressure", 0x906D20, 0x906D3D),
     ManualTextRange("battle_messages", "data.battle.text.messages.abilityEffects", 0x965BE8, 0x965CB9),
+    ManualTextRange("battle_messages", "data.battle.text.messages.totemAura", 0x9665B0, 0x9665CA),
     ManualTextRange("battle_messages", "data.battle.text.messages.fainted.unbound", 0x9678E8, 0x9678FD),
     ManualTextRange("battle_messages", "data.battle.text.messages.abilityStart", 0xA37710, 0xA37765),
+    ManualTextRange("battle_messages", "data.battle.text.messages.statQualityCFRU", 0xA4C603, 0xA4C61A),
     ManualTextRange("battle_messages", "data.battle.text.messages.effectiveness.unbound", 0xA4A922, 0xA4A9C4),
     ManualTextRange("battle_messages", "data.battle.text.messages.escape.unbound", 0xA4AEE1, 0xA4AF18),
     ManualTextRange("battle_messages", "data.battle.text.messages.effectiveness.legacyExact", 0x800880, 0x800898),
+    ManualTextRange("menu_game_settings", "data.menus.text.gameSettings.introSetup", 0x1F10DC2, 0x1F11016),
+    ManualTextRange("menu_common", "data.menus.text.dexnav", 0xA43BA5, 0xA43D82),
 ]
 
 
@@ -892,40 +1032,17 @@ def is_aligned_pointer_target_excluded(target: int) -> bool:
     )
 
 
+def is_aligned_pointer_source_excluded(source: int) -> bool:
+    return source in ALIGNED_POINTER_TEXT_EXCLUDED_SOURCES
+
+
 def _mostly_padding_or_symbols(text: str) -> bool:
     meaningful = sum(1 for char in text if char.isalnum())
     return meaningful / max(1, len(text)) < 0.35
 
 
-def score_name_candidate(result: DecodeResult) -> int:
-    if not result.terminated or result.raw_count:
-        return -10_000
-    clean = visible_text(result.text)
-    if not clean:
-        return -100
-    letters = sum(1 for char in clean if char.isalpha())
-    spaces = clean.count(" ")
-    controls = result.control_count
-    leading_penalty = 12 if clean[0].islower() else 0
-    return letters * 4 + spaces + controls - leading_penalty
-
-
 def decode_slot(rom: bytes, offset: int, size: int) -> DecodeResult:
     return decode_pcs(rom[offset : offset + size], 0, size)
-
-
-def best_substring_slot(rom: bytes, offset: int, size: int) -> tuple[int, DecodeResult]:
-    best_delta = 0
-    best_result = decode_slot(rom, offset, size)
-    best_score = score_name_candidate(best_result)
-    for delta in range(1, size):
-        result = decode_slot(rom, offset + delta, size - delta)
-        score = score_name_candidate(result)
-        if score > best_score:
-            best_delta = delta
-            best_result = result
-            best_score = score
-    return offset + best_delta, best_result
 
 
 def stable_entry_id(
@@ -1110,13 +1227,9 @@ def extract_fixed_table(
                     target = None
 
         if target is None:
-            if table.substring_name:
-                target, result = best_substring_slot(rom, slot, table.slot_size)
-                byte_length = table.slot_size - (target - slot)
-            else:
-                target = slot
-                result = decode_slot(rom, slot, table.slot_size)
-                byte_length = table.slot_size
+            target = slot
+            result = decode_slot(rom, slot, table.slot_size)
+            byte_length = table.slot_size
 
         known_targets.add(target)
         entries.append(
@@ -1177,6 +1290,8 @@ def extract_pointer_table(
     entries_by_target: dict[int, dict] = {}
     for index in range(table.count):
         source = table.start + index * table.stride
+        if table.skip_nulls and rom[source:source + 4] == bytes(4):
+            continue
         target = pointer_at(rom, source)
         known_pointer_sources.add(source)
         if target is None:
@@ -1219,6 +1334,7 @@ def extract_manual_tables(
     known_pointer_sources: set[int],
     manual_ranges: list[ManualTextRange] | None = None,
     include_tables: bool = True,
+    additional_occupied_ranges: list[tuple[int, int]] | None = None,
 ) -> tuple[list[dict], int]:
     entries = []
     if manual_ranges is None:
@@ -1253,7 +1369,7 @@ def extract_manual_tables(
                 )
                 next_table_id += 1
 
-    occupied_ranges = []
+    occupied_ranges = list(additional_occupied_ranges or [])
     for target in known_targets:
         result = decode_pcs(rom, target, DEFAULT_MAX_TEXT_LENGTH)
         if result.byte_length:
@@ -1273,6 +1389,12 @@ def extract_manual_tables(
             result = decode_pcs(rom, cursor, manual_range.end - cursor)
             if not looks_like_manual_range_text(result):
                 cursor += 1
+                continue
+            if any(
+                start != cursor and cursor < end and start < cursor + result.byte_length
+                for start, end in occupied_ranges
+            ):
+                cursor += max(result.byte_length, 1)
                 continue
             known_targets.add(cursor)
             pointer_sources = list(
@@ -1319,6 +1441,9 @@ def scan_pointer_texts(
 
     for source in range(0, len(rom) - 3):
         if source in known_pointer_sources:
+            continue
+        if is_aligned_pointer_source_excluded(source):
+            stats["excluded_aligned_sources"] += 1
             continue
         target = pointer_at(rom, source)
         if target is None:
@@ -1457,7 +1582,18 @@ def is_text_pointer_source(rom: bytes, source: int, target: int) -> bool:
         or is_structured_text_pointer_source(source, target)
         or is_mission_name_pointer_source(rom, source)
         or is_legacy_mission_record_pointer_source(rom, source)
+        or is_cfru_trainerbattle_source(rom, source, target)
     )
+
+
+def is_trainerbattle_text_pointer_source(rom: bytes, source: int) -> bool:
+    if source >= 6 and rom[source - 6] == 0x5C and rom[source - 5] in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15):
+        return True
+    if source >= 10 and rom[source - 10] == 0x5C and rom[source - 9] in (0, 4, 5, 6, 7, 8, 9, 13, 14):
+        return True
+    if source >= 14 and rom[source - 14] == 0x5C and rom[source - 13] in (6, 8, 14):
+        return True
+    return False
 
 
 def is_script_text_pointer_source(rom: bytes, source: int) -> bool:
@@ -1467,11 +1603,38 @@ def is_script_text_pointer_source(rom: bytes, source: int) -> bool:
     # pointer for some late-game systems, including intro character setup.
     # Restrict this broader pattern to the high script bank to avoid random
     # code/data pointers that happen to be preceded by 0x67.
-    return source >= 1 and rom[source - 1] == 0x67 and (source >> 20) == 0x1E
+    if source >= 1 and rom[source - 1] == 0x67 and (source >> 20) == 0x1E:
+        return True
+    return is_trainerbattle_text_pointer_source(rom, source)
 
 
-def is_pointer_reference_source(rom: bytes, source: int, _target: int) -> bool:
-    return source % 4 == 0 or is_script_text_pointer_source(rom, source)
+def is_cfru_trainerbattle_source(rom: bytes, source: int, target: int) -> bool:
+    """Detect CFRU custom trainerbattle dialogues with unaligned operands."""
+    if not ((target >> 20) in (0x1E, 0x1F) or (0x170000 <= target <= 0x1D0000)):
+        return False
+    if (source >> 20) in (0x1E, 0x1F) and source < len(rom):
+        if source >= 6 and rom[source - 6] == 0x5C and rom[source - 4] == 0xF5 and rom[source - 3] == 0x00:
+            return True
+        if source >= 10 and rom[source - 10] == 0x5C and rom[source - 8] == 0xF5 and rom[source - 7] == 0x00:
+            return True
+    return False
+
+
+def is_cfru_battle_message_source(rom: bytes, source: int, target: int) -> bool:
+    return (
+        0x905690 <= target <= 0x906550
+        and 0x8B0000 <= source < 0x970000
+        and source >= 1
+        and rom[source - 1] == 0x02
+    )
+
+
+def is_pointer_reference_source(rom: bytes, source: int, target: int) -> bool:
+    return (
+        source % 4 == 0
+        or is_script_text_pointer_source(rom, source)
+        or is_cfru_battle_message_source(rom, source, target)
+    )
 
 
 def is_additional_text_pointer_source(source: int, target: int) -> bool:
@@ -1868,6 +2031,10 @@ def main() -> None:
         known_pointer_sources,
         POST_POINTER_MANUAL_TEXT_RANGES,
         include_tables=False,
+        additional_occupied_ranges=[
+            (int(e["address"], 16), int(e["address"], 16) + e["byte_length"])
+            for e in script_entries
+        ],
     )
     entries.extend(table_entries)
 

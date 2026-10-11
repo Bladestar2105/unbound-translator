@@ -1,0 +1,573 @@
+{
+  "asset_id": "pokemon_types",
+  "language": "de",
+  "status": "localized",
+  "source_sha256": "26d36a56bfef9b938d86508b23fbe2194973e23f85af7df9a14397040e95cdbb",
+  "output_sha256": "88256296ceef429f331dc710bcb68b033901a774fd34ce6e97f57596a0dc9ded",
+  "labels": [
+    {
+      "source": "NORMAL",
+      "text": "NORMAL",
+      "rect": [
+        0,
+        16,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "FIRE",
+      "text": "FEUER",
+      "rect": [
+        32,
+        16,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "WATER",
+      "text": "WASSER",
+      "rect": [
+        64,
+        16,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "GRASS",
+      "text": "PFLANZE",
+      "rect": [
+        96,
+        16,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "ELECTR",
+      "text": "ELEKTRO",
+      "rect": [
+        0,
+        32,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "ROCK",
+      "text": "GESTEIN",
+      "rect": [
+        32,
+        32,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "GROUND",
+      "text": "BODEN",
+      "rect": [
+        64,
+        32,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "ICE",
+      "text": "EIS",
+      "rect": [
+        96,
+        32,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "FLYING",
+      "text": "FLUG",
+      "rect": [
+        0,
+        48,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "FIGHT",
+      "text": "KAMPF",
+      "rect": [
+        32,
+        48,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "GHOST",
+      "text": "GEIST",
+      "rect": [
+        64,
+        48,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "BUG",
+      "text": "KÄFER",
+      "rect": [
+        96,
+        48,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "POISON",
+      "text": "GIFT",
+      "rect": [
+        0,
+        64,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "PSYCHIC",
+      "text": "PSYCHO",
+      "rect": [
+        32,
+        64,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "STEEL",
+      "text": "STAHL",
+      "rect": [
+        64,
+        64,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "DARK",
+      "text": "UNLICHT",
+      "rect": [
+        96,
+        64,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "DRAGON",
+      "text": "DRACHE",
+      "rect": [
+        0,
+        80,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "FAIRY",
+      "text": "FEE",
+      "rect": [
+        0,
+        128,
+        32,
+        12
+      ],
+      "style": "type"
+    },
+    {
+      "source": "TYPE",
+      "text": "TYP",
+      "rect": [
+        64,
+        80,
+        64,
+        12
+      ],
+      "style": "typeui"
+    },
+    {
+      "source": "POWER",
+      "text": "STÄRKE",
+      "rect": [
+        0,
+        96,
+        64,
+        12
+      ],
+      "style": "typeui"
+    },
+    {
+      "source": "ACCURACY",
+      "text": "GENAU.",
+      "rect": [
+        64,
+        96,
+        64,
+        12
+      ],
+      "style": "typeui"
+    },
+    {
+      "source": "PP",
+      "text": "AP",
+      "rect": [
+        0,
+        112,
+        64,
+        12
+      ],
+      "style": "typeui"
+    },
+    {
+      "source": "EFFECT",
+      "text": "EFFEKT",
+      "rect": [
+        64,
+        112,
+        64,
+        12
+      ],
+      "style": "typeui"
+    }
+  ],
+  "method": "Deterministic masks extracted from source-font indexed pixels; nearest-neighbour scaling, original palette-index outlines. No generated artwork or external font.",
+  "glyph_sources": {
+    ".": {
+      "asset": "title_legal_notice",
+      "rect": [
+        208,
+        151,
+        1,
+        1
+      ],
+      "foreground_indices": [
+        4
+      ]
+    },
+    "A": {
+      "asset": "pokemon_types",
+      "rect": [
+        21,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "B": {
+      "asset": "pokemon_types",
+      "rect": [
+        104,
+        50,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "C": {
+      "asset": "pokemon_types",
+      "rect": [
+        17,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "D": {
+      "asset": "pokemon_types",
+      "rect": [
+        90,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "E": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "F": {
+      "asset": "pokemon_types",
+      "rect": [
+        39,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "G": {
+      "asset": "pokemon_types",
+      "rect": [
+        100,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "H": {
+      "asset": "pokemon_types",
+      "rect": [
+        51,
+        50,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "I": {
+      "asset": "pokemon_types",
+      "rect": [
+        44,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "K": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "L": {
+      "asset": "pokemon_types",
+      "rect": [
+        26,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "M": {
+      "asset": "pokemon_types",
+      "rect": [
+        16,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "N": {
+      "asset": "pokemon_types",
+      "rect": [
+        1,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "O": {
+      "asset": "pokemon_types",
+      "rect": [
+        6,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "P": {
+      "asset": "pokemon_types",
+      "rect": [
+        2,
+        66,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "R": {
+      "asset": "pokemon_types",
+      "rect": [
+        11,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "S": {
+      "asset": "pokemon_types",
+      "rect": [
+        115,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "T": {
+      "asset": "pokemon_types",
+      "rect": [
+        78,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "U": {
+      "asset": "pokemon_types",
+      "rect": [
+        80,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "W": {
+      "asset": "pokemon_types",
+      "rect": [
+        68,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "Y": {
+      "asset": "pokemon_types",
+      "rect": [
+        12,
+        50,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "Z": {
+      "derived_from": [
+        "E",
+        "N"
+      ],
+      "transform": "source E bars and mirrored N interior diagonal; source N stem pixels at diagonal endpoints"
+    },
+    "Ä": {
+      "derived_from": [
+        "A",
+        "."
+      ],
+      "transform": "two copies of original full-stop pixel above unchanged base glyph"
+    }
+  },
+  "unchanged": "Exact palette and dimensions; all pixels outside label rectangles; all source tilemaps, palette-bank/flip bits, unused tiles, scores, art and credits.",
+  "validation": {
+    "source_roundtrip": "passed",
+    "indexed_png_roundtrip": "passed",
+    "encode_asset": "passed",
+    "shared_tiles": "passed",
+    "changed_pixels": 2514,
+    "parts": [
+      {
+        "offset": "0x0B1EE64",
+        "payload_bytes": 9216,
+        "compressed_bytes": 9216,
+        "original_capacity": 9216,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x0107DB0"
+        ],
+        "sha256": "de6b7d63c8df2145342180e8bea66c50ae2a2f4ff9103298fce295a360fc3725"
+      }
+    ],
+    "lz77": "vram_safe=True; decompression roundtrip passed",
+    "encoded_tiles_render_roundtrip": "passed; virtual data only, no ROM written",
+    "unused_tiles": "all original bytes preserved",
+    "visual_inspection": "performed on generated native views and enlarged indexed crops",
+    "source_rom_sha256": "7aa25bbf568f7cfcf6ee1cf2e9e6ff637350b3d0705c2375cabb6baa7d9739f7"
+  },
+  "blocker": null,
+  "limitations": [
+    "Runtime reachability is inherited, not re-established; no in-game rendering tested."
+  ]
+}

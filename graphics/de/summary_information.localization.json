@@ -1,0 +1,390 @@
+{
+  "asset_id": "summary_information",
+  "language": "de",
+  "status": "localized",
+  "source_sha256": "d45aca7b4aa216282e7627bc756e2c5dfdae732da0e3ad6e7709d9ae32f7bb7b",
+  "output_sha256": "a6036d24bb278cc129bb0350c543ac4b83af74d172c8a83f8b768a088cbaaf61",
+  "labels": [
+    {
+      "source": "No.",
+      "text": "NR.",
+      "rect": [
+        8,
+        27,
+        32,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "NAME",
+      "text": "NAME",
+      "rect": [
+        8,
+        39,
+        32,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "TYPE",
+      "text": "TYP",
+      "rect": [
+        8,
+        51,
+        32,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "OT",
+      "text": "OT",
+      "rect": [
+        8,
+        63,
+        32,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "IDNo.",
+      "text": "ID",
+      "rect": [
+        8,
+        75,
+        32,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "ITEM",
+      "text": "ITEM",
+      "rect": [
+        8,
+        87,
+        32,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "HP",
+      "text": "KP",
+      "rect": [
+        40,
+        179,
+        16,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "ATTACK",
+      "text": "ANGRIFF",
+      "rect": [
+        8,
+        199,
+        48,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "DEFENSE",
+      "text": "VERT.",
+      "rect": [
+        8,
+        211,
+        48,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "SP. ATK",
+      "text": "SP.ANG.",
+      "rect": [
+        8,
+        223,
+        48,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "SP. DEF",
+      "text": "SP.VER.",
+      "rect": [
+        8,
+        235,
+        48,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "SPEED",
+      "text": "INIT.",
+      "rect": [
+        8,
+        247,
+        48,
+        7
+      ],
+      "style": "info"
+    },
+    {
+      "source": "EXP.",
+      "text": "EP",
+      "rect": [
+        8,
+        259,
+        48,
+        7
+      ],
+      "style": "info"
+    }
+  ],
+  "method": "Deterministic masks extracted from source-font indexed pixels; nearest-neighbour scaling, original palette-index outlines. No generated artwork or external font.",
+  "glyph_sources": {
+    ".": {
+      "asset": "title_legal_notice",
+      "rect": [
+        208,
+        151,
+        1,
+        1
+      ],
+      "foreground_indices": [
+        4
+      ]
+    },
+    "A": {
+      "asset": "pokemon_types",
+      "rect": [
+        21,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "D": {
+      "asset": "pokemon_types",
+      "rect": [
+        90,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "E": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "F": {
+      "asset": "pokemon_types",
+      "rect": [
+        39,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "G": {
+      "asset": "pokemon_types",
+      "rect": [
+        100,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "I": {
+      "asset": "pokemon_types",
+      "rect": [
+        44,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "K": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "M": {
+      "asset": "pokemon_types",
+      "rect": [
+        16,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "N": {
+      "asset": "pokemon_types",
+      "rect": [
+        1,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "O": {
+      "asset": "pokemon_types",
+      "rect": [
+        6,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "P": {
+      "asset": "pokemon_types",
+      "rect": [
+        2,
+        66,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "R": {
+      "asset": "pokemon_types",
+      "rect": [
+        11,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "S": {
+      "asset": "pokemon_types",
+      "rect": [
+        115,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "T": {
+      "asset": "pokemon_types",
+      "rect": [
+        78,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "V": {
+      "asset": "title_legal_notice",
+      "rect": [
+        196,
+        147,
+        4,
+        5
+      ],
+      "foreground_indices": [
+        4
+      ],
+      "transform": "lowercase v source mask, nearest-neighbour height 7"
+    },
+    "Y": {
+      "asset": "pokemon_types",
+      "rect": [
+        12,
+        50,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    }
+  },
+  "unchanged": "Exact palette and dimensions; all pixels outside label rectangles; all source tilemaps, palette-bank/flip bits, unused tiles, scores, art and credits.",
+  "validation": {
+    "source_roundtrip": "passed",
+    "indexed_png_roundtrip": "passed",
+    "encode_asset": "passed",
+    "shared_tiles": "passed",
+    "changed_pixels": 871,
+    "parts": [
+      {
+        "offset": "0x0E9A460",
+        "payload_bytes": 16384,
+        "compressed_bytes": 3080,
+        "original_capacity": 3084,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x0135FFC"
+        ],
+        "sha256": "c8eb8bda5f3365f8214930addc65e98734ddb493157a1b5e702ec4e83a356ad0"
+      }
+    ],
+    "lz77": "vram_safe=True; decompression roundtrip passed",
+    "encoded_tiles_render_roundtrip": "passed; virtual data only, no ROM written",
+    "unused_tiles": "all original bytes preserved",
+    "visual_inspection": "performed on generated native views and enlarged indexed crops",
+    "source_rom_sha256": "7aa25bbf568f7cfcf6ee1cf2e9e6ff637350b3d0705c2375cabb6baa7d9739f7"
+  },
+  "blocker": null,
+  "limitations": [
+    "Runtime reachability is inherited, not re-established; no in-game rendering tested."
+  ]
+}

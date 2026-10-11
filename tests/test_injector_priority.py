@@ -1,5 +1,9 @@
 import importlib.util
+import contextlib
+import io
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -14,26 +18,21 @@ SPEC.loader.exec_module(INJECTOR)
 
 class InjectionPriorityTests(unittest.TestCase):
     def test_free_blocks_exclude_engine_ranges_and_keep_edge_margins(self):
-        rom = bytearray(b"\x00" * 0x1FE2000)
-        rom[0x220000:0x240000] = b"\xFF" * 0x20000
+        rom = bytearray(b"\x00" * 0x2000000)
+        rom[0x220000:0x230000] = b"\xFF" * 0x10000
         rom[0xFFF000:0x1002000] = b"\xFF" * 0x3000
         rom[0x165000:0x167000] = b"\xFF" * 0x2000
         rom[0x19A000:0x19C000] = b"\xFF" * 0x2000
-        rom[0x1FDF000:0x1FE2000] = b"\xFF" * 0x3000
+        rom[0x1C5000:0x1C7000] = b"\xFF" * 0x2000
+        rom[0x1FE6000:0x1FE9000] = b"\xFF" * 0x3000
 
         blocks = INJECTOR.build_free_blocks(rom, [], 0x1000, 0x100)
         ranges = {(block.start, block.end) for block in blocks}
 
         self.assertIn((0x220008, 0x22FFF8), ranges)
-        self.assertIn((0x1FE0008, 0x1FE1FF8), ranges)
-        self.assertTrue(
-            all(end <= 0x16586A or start >= 0x166C9A for start, end in ranges)
-        )
-        self.assertTrue(
-            all(end <= 0x19A837 or start >= 0x19B86A for start, end in ranges)
-        )
+        self.assertTrue(all(not (0x160000 <= start < 0x200000) for start, _ in ranges))
         self.assertTrue(all(not (0x230000 <= start < 0x500000) for start, _ in ranges))
-        self.assertTrue(all(not (0x1000000 <= start < 0x1FE0000) for start, _ in ranges))
+        self.assertTrue(all(not (0x1000000 <= start < 0x2000000) for start, _ in ranges))
 
     def test_pointer_source_requires_alignment_or_known_script_shape(self):
         rom = bytearray(64)
@@ -49,6 +48,37 @@ class InjectionPriorityTests(unittest.TestCase):
 
         rom[27:31] = (0x02000010).to_bytes(4, "little")
         self.assertTrue(INJECTOR.plausible_pointer_source(rom, 31))
+
+    def test_pointer_source_accepts_third_trainerbattle_text_operand(self):
+        rom = bytearray(64)
+        source = 33
+        rom[source - 14] = 0x5C
+        rom[source - 13] = 14
+        self.assertTrue(INJECTOR.plausible_pointer_source(rom, source))
+        rom[source - 13] = 0
+        self.assertFalse(INJECTOR.plausible_pointer_source(rom, source))
+
+    def test_strict_build_refuses_oversized_pointer_discovery_fixed_slot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            source_path = directory / "source.gba"
+            text_path = directory / "texts.json"
+            output_path = directory / "patched.gba"
+            source_path.write_bytes(bytearray(0x400))
+            text_path.write_text(json.dumps({"entries": [{
+                "id": "fixed", "category": "pointer_texts", "address": "0x100",
+                "byte_length": 4, "original": "Yes", "translated": "German text",
+                "pointer_sources": [],
+            }]}))
+            with (
+                mock.patch.object(sys, "argv", [str(SCRIPT_PATH), str(source_path),
+                    str(text_path), "-o", str(output_path), "--fail-on-no-space"]),
+                mock.patch.object(INJECTOR, "apply_language_patches", return_value=[]),
+                mock.patch.object(INJECTOR, "patch_graphics", return_value=[]),
+                self.assertRaisesRegex(RuntimeError, "Lossy fixed-slot truncation refused"),
+            ):
+                INJECTOR.main()
+            self.assertFalse(output_path.exists())
 
     def test_allocator_uses_first_suitable_block_in_address_order(self):
         blocks = [
@@ -227,6 +257,51 @@ class InjectionPriorityTests(unittest.TestCase):
         self.assertFalse(candidate.reclaimable)
         self.assertEqual(owners, set())
         self.assertEqual(blocks, [])
+
+    def test_graphics_edits_do_not_change_original_script_ownership(self):
+        rom = bytearray(0x400)
+        address, source, graphic_pointer = 0x100, 0x20, 0x81
+        rom[source - 2:source] = b"\x0F\x00"
+        rom[source:source + 4] = (INJECTOR.GBA_POINTER_BASE + address).to_bytes(4, "little")
+        rom[source + 4:source + 6] = b"\x09\x04"
+        # Pointer-shaped compressed graphics bytes conservatively prevent ownership.
+        rom[graphic_pointer:graphic_pointer + 4] = (
+            INJECTOR.GBA_POINTER_BASE + address + 8
+        ).to_bytes(4, "little")
+        rom[0x300:0x380] = b"\xFF" * 0x80
+        entry = {
+            "id": "script", "category": "scripts", "address": hex(address),
+            "byte_length": 0x20, "pointer_sources": [hex(source)],
+            "original": "Short", "translated": "A" * 64,
+        }
+
+        def edit_graphics(live_rom, *args, **kwargs):
+            live_rom[graphic_pointer:graphic_pointer + 4] = b"\x00" * 4
+            return []
+
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            source_path, text_path = directory / "source.gba", directory / "texts.json"
+            output_path, map_path = directory / "patched.gba", directory / "map.json"
+            source_path.write_bytes(rom)
+            text_path.write_text(json.dumps({"entries": [entry]}))
+            with (
+                mock.patch.object(sys, "argv", [str(SCRIPT_PATH), str(source_path),
+                    str(text_path), "-o", str(output_path), "--map-output", str(map_path),
+                    "--reclaim-script-slots", "--fail-on-no-space"]),
+                mock.patch.object(INJECTOR, "RECLAIMABLE_SCRIPT_TEXT_RANGES", ((0x100, 0x200),)),
+                mock.patch.object(INJECTOR, "build_free_blocks", return_value=[
+                    INJECTOR.FreeBlock(0x300, 0x380, 0x300)]),
+                mock.patch.object(INJECTOR, "apply_language_patches", return_value=[]),
+                mock.patch.object(INJECTOR, "patch_graphics", side_effect=edit_graphics),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                INJECTOR.main()
+            report = json.loads(map_path.read_text())
+            self.assertEqual(report["reclaimable_slot_owners"], [])
+            self.assertEqual(report["stats"]["relocated"], 1)
+            self.assertEqual(report["stats"]["skipped_no_space"], 0)
+            self.assertEqual(output_path.read_bytes()[graphic_pointer:graphic_pointer + 4], b"\x00" * 4)
 
     def test_reclaimed_blocks_expand_only_for_relocated_owner_generations(self):
         first = INJECTOR.RelocationCandidate(
@@ -695,6 +770,22 @@ class InjectionPriorityTests(unittest.TestCase):
         self.assertLessEqual(
             len(candidates[0].encoded), INJECTOR.ABILITY_DESCRIPTION_MAX_BYTES
         )
+
+    def test_normalize_plain_script_layout_preserves_words(self):
+        samples = [
+            ("\\pnon possiamo farlo", "\\n\\nnon possiamo farlo"),
+            ("\\pnord della citta", "\\n\\nnord della citta"),
+            ("\\pnecessario per la missione", "\\n\\nnecessario per la missione"),
+            ("\\pNon possiamo farlo", "\\n\\nNon possiamo farlo"),
+            ("\\pkamu lanjut", "\\n\\nkamu lanjut"),
+            ("\\pk\\mn Allenatore", "\\pk\\mn Allenatore"),
+            ("\\pk", "\\pk"),
+        ]
+        for text, expected in samples:
+            self.assertEqual(
+                INJECTOR.normalize_plain_script_layout(text),
+                expected,
+            )
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ KNOWN_BINARY_FALSE_POSITIVES = {
     "scr_245EE0",
     "scr_246AE0",
 }
+EXECUTABLE_POINTER_FALSE_POSITIVE = "scr_489906"
 
 
 def test_indonesian_is_supported_and_uses_current_ready_schema():
@@ -72,6 +73,14 @@ def test_ready_italian_preserves_known_binary_pointer_false_positives():
         entry = entries_by_id.get(entry_id)
         if entry is not None:
             assert hma_quote(entry["translated"]) == entry["original"]
+
+
+def test_ready_translations_exclude_executable_pointer_false_positive():
+    for ready_path in (READY_ITALIAN, READY_INDONESIAN, READY_GERMAN):
+        entries = json.loads(ready_path.read_text(encoding="utf-8"))["entries"]
+        assert all(
+            entry["id"] != EXECUTABLE_POINTER_FALSE_POSITIVE for entry in entries
+        )
 
 
 def test_pokedex_unknown_fallback_stays_in_place_and_fits():
@@ -289,8 +298,9 @@ def test_ready_german_battle_fragments_keep_runtime_spaces_and_loss_text_german(
         "scr_1A6197",
         "scr_1A61E5",
     ):
-        assert "hat keine Pokémon mehr!" in INJECTOR.translation_for_injection(
-            by_id[entry_id]
+        assert "hat keine Pokémon mehr!" in re.sub(
+            r"\\(?:[nl]|p(?!k))|\n", " ",
+            INJECTOR.translation_for_injection(by_id[entry_id]),
         )
 
 
@@ -538,3 +548,130 @@ def test_natures_and_pokedex_controls_keep_safe_complete_ownership():
     cry = by_id["tbl_menu_pokedex_00000_415FAD"]
     assert cry["translated"] == "\\btn04Verso"
     assert cry["pointer_sources"] == ["0x105FE4", "0x1067B8"]
+
+
+def test_daycare_transition_menu_signature_preserved():
+    for ready_path in (READY_ITALIAN, READY_INDONESIAN, READY_GERMAN):
+        entries = json.loads(ready_path.read_text(encoding="utf-8"))["entries"]
+        by_id = {entry["id"]: entry for entry in entries}
+        entry = by_id["tbl_menu_common_00020_416244"]
+        assert entry["translated"] == "Go back to the\nprevious menu."
+        assert entry["address"] == "0x416244"
+
+
+def test_ready_german_trainer_classes_use_real_text_pointer_targets():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    by_address = {int(entry["address"], 16): entry for entry in entries}
+    expected = {0x23E572: 0x1F2CB7C, 0x23E760: 0x1EEA039}
+    for source, target in expected.items():
+        assert source not in by_address
+        entry = by_address[target]
+        assert entry["category"] == "trainer_classes"
+        assert f"0x{source:X}" in entry["pointer_sources"]
+        assert entry["translated"]
+
+
+def test_ready_german_script_lines_fit_dialogue_window():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    for entry in entries:
+        if entry["category"] != "scripts":
+            continue
+        effective = INJECTOR.translation_for_injection(entry)
+        if effective == INJECTOR.strip_hma_quotes(entry["original"]):
+            continue
+        lines = re.split(r"\\(?:p|n|l)|\n", effective)
+        assert max(map(text_pixel_width, lines), default=0) <= 224, entry["id"]
+
+
+def test_ready_german_pointer_discoveries_fit_without_relocation():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    charmap = INJECTOR.Charmap(target_lang="de")
+    for entry in entries:
+        if entry["category"] != "pointer_texts":
+            continue
+        text = INJECTOR.translation_for_injection(entry)
+        if not text or text == INJECTOR.strip_hma_quotes(entry["original"]):
+            continue
+        assert len(INJECTOR.encode_text(charmap, text)) <= entry["byte_length"], entry["id"]
+
+
+def test_ready_german_battle_lines_fit_with_full_named_runtime_values():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    controlfix = load_script_module("004_controlfix_translations.py", "battle_width_qa")
+    widths = controlfix.battle_runtime_widths(entries)
+    for entry in entries:
+        if entry["category"] != "battle_messages":
+            continue
+        effective = INJECTOR.translation_for_injection(entry)
+        for line in re.split(r"\\(?:p|n|l)|\n", effective):
+            assert text_pixel_width(line, runtime_widths=widths) <= 208, entry["id"]
+
+
+def test_ready_german_easy_chat_words_fit_single_column():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    for entry in entries:
+        if entry["category"] == "easy_chat_words":
+            effective = INJECTOR.translation_for_injection(entry)
+            assert not re.search(r"\\(?:[nl]|p(?!k))|\n", effective), entry["id"]
+            assert text_pixel_width(effective) <= 96, entry["id"]
+
+
+@pytest.mark.parametrize("address", ["0xA4CB9D", "0xA4CB06", "0x3FD555", "0x3FD55B", "0xA4C61A"])
+def test_ready_german_assembled_fragments_preserve_word_boundaries(address):
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    entry = next(e for e in entries if int(e["address"], 16) == int(address, 16))
+    original = INJECTOR.strip_hma_quotes(entry["original"])
+    text = INJECTOR.strip_hma_quotes(INJECTOR.translation_for_injection(entry))
+    if original.startswith(" "):
+        assert text.startswith(" "), entry["id"]
+    if original.endswith(" "):
+        assert text.endswith(" "), entry["id"]
+
+
+def test_ready_german_slot_machine_umlaut_is_present_in_pixels():
+    from lib.gba_graphics import read_png_indexed
+    _, _, pixels, _ = read_png_indexed(
+        str(READY_GERMAN.parents[1] / "graphics/de/slot_machine_labels.png")
+    )
+    assert pixels[16][87] == pixels[16][89] == 3
+    assert pixels[16][88] == 15
+
+
+def test_ready_german_frontier_dialogue_fits_and_is_translated():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    for entry in entries:
+        if entry["category"] == "trainer_dialogue":
+            assert entry.get("translated"), entry["id"]
+            text = INJECTOR.translation_for_injection(entry)
+            assert max(map(text_pixel_width, re.split(r"\\(?:p|n|l)|\n", text)), default=0) <= 208, entry["id"]
+
+
+def test_ready_german_does_not_rewrite_compressed_graphics_as_text_pointer():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    entry = next(e for e in entries if e["id"] == "scr_A47744")
+    assert 0x176CA0C not in map(INJECTOR.parse_address, entry["pointer_sources"])
+
+
+def test_ready_german_discovered_battle_messages_fit_named_values():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    controlfix = load_script_module("004_controlfix_translations.py", "discovered_battle_qa")
+    widths = controlfix.battle_runtime_widths(entries)
+    for entry in entries:
+        if entry["category"] != "pointer_texts":
+            continue
+        text = INJECTOR.translation_for_injection(entry)
+        if text == INJECTOR.strip_hma_quotes(entry["original"]):
+            continue
+        if re.search(r"\\{2}[0-3][0-9A-F]", text):
+            for line in re.split(r"\\(?:p|n|l)|\n", text):
+                assert text_pixel_width(line, runtime_widths=widths) <= 208, entry["id"]
+
+
+def test_ready_german_rejects_overlapping_translation_slots():
+    entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
+    slots = sorted(
+        (INJECTOR.parse_address(e["address"]), int(e["byte_length"]), e["id"])
+        for e in entries
+    )
+    for (start, length, entry_id), (next_start, _, next_id) in zip(slots, slots[1:]):
+        assert start + length <= next_start, (entry_id, next_id)

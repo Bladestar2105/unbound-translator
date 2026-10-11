@@ -19,11 +19,11 @@ TOKEN_RE = re.compile(
     r"|\\\?[0-9A-Fa-f]{2}"
     r"|\\9[0-9A-Fa-f]{2}"
     r"|\\F[0-9A-Fa-f]"
-    r"|\\(?:pk|mn|Po|Ke|Bl|Lo|Ck|Lv|qo|qc|sm|sf|au|ad|al|ar|pn|n|l|p|e|d|\.|<|>|\+|r)"
+    r"|\\(?:pk(?![a-zA-Z])|Po(?![a-zA-Z])|mn|Ke|Bl|Lo|Ck|Lv|qo|qc|sm|sf|au|ad|al|ar|n|l|p|e|d|\.|<|>|\+|r)"
     r"|\[[A-Za-z0-9_]+\]"
 )
 
-LAYOUT_TOKENS = {"\\n", "\\p", "\\l", "\\pn"}
+LAYOUT_TOKENS = {"\\n", "\\p", "\\l"}
 QUOTE_TOKENS = {"\\qo", "\\qc"}
 BATTLE_PROMPT_NAME_SECOND_LINE_IDS = {
     "tbl_battle_messages_00412_3FE6D5",
@@ -54,7 +54,7 @@ COLOR_TOKENS = {
 
 DEFAULT_WRAP_CATEGORIES = (
     "scripts,plain_scripts,pokedex_descriptions,move_descriptions,ability_descriptions,item_descriptions,"
-    "mission_descriptions,mission_objectives,menu_pokemon_summary,battle_messages,trade_messages"
+    "mission_descriptions,mission_objectives,menu_pokemon_summary,battle_messages,trainer_dialogue,trade_messages"
 )
 DESCRIPTION_CATEGORIES = {
     "move_descriptions",
@@ -403,9 +403,7 @@ def normalize_actual_layout_breaks(text):
 
     def paragraph_repl(match):
         count = len(match.group(0))
-        # The explicit alias prevents paragraph + "k..." from becoming the
-        # longer Pokemon glyph token ``\\pk`` during PCS encoding.
-        return "\\pn" * (count // 2) + ("\\n" if count % 2 else "")
+        return "\\p" * (count // 2) + ("\\n" if count % 2 else "")
 
     text = re.sub(r"\n{2,}", paragraph_repl, text)
     return text.replace("\n", "\\n")
@@ -523,13 +521,13 @@ def wrap_words(text, width):
     return lines, long_words
 
 
-def wrap_words_by_pixels(text, max_pixels):
+def wrap_words_by_pixels(text, max_pixels, runtime_widths=None):
     words = text.split()
     lines = []
     current = []
     for word in words:
         candidate = " ".join(current + [word])
-        if current and text_pixel_width(candidate) > max_pixels:
+        if current and text_pixel_width(candidate, runtime_widths=runtime_widths) > max_pixels:
             lines.append(" ".join(current))
             current = [word]
         else:
@@ -539,10 +537,41 @@ def wrap_words_by_pixels(text, max_pixels):
     return lines
 
 
-BATTLE_LAYOUT_RE = re.compile(r"(\\\\pn|\\\\p|\\\\n|\\\\l|\r\n|\r|\n)")
+BATTLE_LAYOUT_RE = re.compile(r"(\\{1,2}(?:pn|p(?!k)|[nl])|\n{2,}|\r\n|\r|\n)")
 
 
-def wrap_battle_message(text, max_pixels):
+def battle_runtime_widths(entries):
+    """Bound named battle placeholders using this translation's effective names."""
+    widths = {}
+    categories = {
+        "move_names": (0x14, 0x15), "item_names": (0x16,),
+        "ability_names": (0x17, 0x18, 0x19, 0x1A, 0x1B),
+        "trainer_classes": (0x1C, 0x2E, 0x32), "trainer_names": (0x1D, 0x2F, 0x33, 0x39),
+    }
+    prefix_width = 0
+    for entry in entries:
+        text = entry.get("translated_fixed") or entry.get("translated") or entry.get("original", "")
+        width = text_pixel_width(strip_hma_quotes(text))
+        for token in categories.get(entry.get("category"), ()):
+            widths[token] = max(widths.get(token, 0), width)
+        if entry.get("category") == "battle_messages" and strip_hma_quotes(
+            entry.get("original", "")
+        ).strip().lower() in {"wild", "foe", "the wild", "the opposing"}:
+            prefix_width = max(prefix_width, width)
+    # Reserve 90 pixels for the ten-glyph nickname field.
+    for token in (*range(0x05, 0x0D), 0x0E, *range(0x1E, 0x24), 0x3A, 0x3B, 0x3C):
+        widths[token] = 90
+    for token in (0x0D, 0x0F, 0x10, 0x11, 0x12, 0x13):
+        widths[token] = 90 + prefix_width + text_pixel_width(" ")
+    for token in (0x1D, 0x2F, 0x33, 0x39):
+        widths[token] = max(widths.get(token, 0), 90)
+    for token in (*range(0x28, 0x2E), *range(0x35, 0x39), 0x3D):
+        widths[token] = prefix_width
+    # shortcut: generic text buffers keep the shared estimate until their producers are bounded.
+    return widths
+
+
+def wrap_battle_message(text, max_pixels, runtime_widths=None):
     """Wrap battle lines by rendered width, including dynamic-name buffers."""
     pieces = BATTLE_LAYOUT_RE.split(text)
     wrapped = []
@@ -561,13 +590,28 @@ def wrap_battle_message(text, max_pixels):
             wrapped.append(piece)
             continue
 
-        lines = wrap_words_by_pixels(core, max_pixels)
+        lines = wrap_words_by_pixels(core, max_pixels, runtime_widths)
         long_words += sum(
-            text_pixel_width(word) > max_pixels for word in core.split()
+            text_pixel_width(word, runtime_widths=runtime_widths) > max_pixels for word in core.split()
         )
         wrapped.append(leading + "\n".join(lines) + trailing)
 
-    result = "".join(wrapped)
+    # A battle window has two rows; later rows must scroll, not move off-window.
+    result = []
+    row = 0
+    for piece in BATTLE_LAYOUT_RE.split("".join(wrapped)):
+        if BATTLE_LAYOUT_RE.fullmatch(piece):
+            layout = piece.lstrip("\\")
+            if layout in {"p", "pn"} or piece.startswith("\n\n"):
+                row = 0
+            elif layout == "l":
+                row = 1
+            elif row:
+                piece = "\\l"
+            else:
+                row = 1
+        result.append(piece)
+    result = "".join(result)
     return result, result != text, long_words
 
 
@@ -815,9 +859,13 @@ def restore_battle_prompt_layout(text, _original, entry):
 def wrap_translation(text, entry, original, args, wrap_categories, preserve_text=False):
     if args.no_wrap or entry.get("category") not in wrap_categories:
         return text, False, 0, False
-    if entry.get("category") == "battle_messages":
+    if entry.get("category") in {"battle_messages", "trainer_dialogue"}:
+        runtime_widths = (
+            getattr(args, "battle_runtime_widths", None)
+            if entry.get("category") == "battle_messages" else None
+        )
         wrapped, _changed, long_words = wrap_battle_message(
-            text, args.battle_message_max_pixels
+            text, args.battle_message_max_pixels, runtime_widths
         )
         return wrapped, wrapped != text, long_words, False
     if (
@@ -1094,6 +1142,7 @@ def main():
 
     data = json.loads(Path(args.input).read_text(encoding="utf-8"))
     entries = list(iter_entries(data))
+    args.battle_runtime_widths = battle_runtime_widths(entries)
     originals = source_originals(args.source)
     cmap = Charmap(target_lang="it")
     wrap_categories = {category.strip() for category in args.wrap_categories.split(",") if category.strip()}

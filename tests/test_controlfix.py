@@ -60,7 +60,7 @@ def test_normalize_and_repair_common_control_damage():
 def test_paragraph_before_indonesian_k_is_not_pokemon_glyph():
     fixed = controlfix.normalize_actual_layout_breaks("Pertama.\n\nkamu lanjut.")
 
-    assert fixed == "Pertama.\\pnkamu lanjut."
+    assert fixed == "Pertama.\\pkamu lanjut."
     assert controlfix.Charmap(target_lang="id").encode(fixed) == controlfix.Charmap(
         target_lang="id"
     ).encode("Pertama.\n\nkamu lanjut.")
@@ -71,10 +71,32 @@ def test_paragraph_before_italian_n_preserves_first_letter():
         "ottenere il pacco\n\nnecessario per la missione"
     )
 
-    assert fixed == "ottenere il pacco\\pnnecessario per la missione"
+    assert fixed == "ottenere il pacco\\pnecessario per la missione"
     assert controlfix.Charmap(target_lang="it").encode(fixed) == controlfix.Charmap(
         target_lang="it"
     ).encode("ottenere il pacco\n\nnecessario per la missione")
+
+
+@pytest.mark.parametrize(
+    "text,expected_clean",
+    [
+        ("\\pnon possiamo farlo", "non possiamo farlo"),
+        ("\\pnord della citta", "nord della citta"),
+        ("\\pnecessario per vincere", "necessario per vincere"),
+        ("\\pNon possiamo farlo", "Non possiamo farlo"),
+        ("\\pnebbia fitta", "nebbia fitta"),
+        ("\\pnuovo gioco", "nuovo gioco"),
+        ("\\pnome del giocatore", "nome del giocatore"),
+        ("\\pnotte fonda", "notte fonda"),
+        ("\\pniente da fare", "niente da fare"),
+        ("\\pnessuno puo passare", "nessuno puo passare"),
+        ("\\pkamu lanjut", "kamu lanjut"),
+    ],
+)
+def test_remove_layout_tokens_preserves_words_starting_with_n_and_k(text, expected_clean):
+    clean, layout = controlfix.remove_layout_tokens(text)
+    assert clean == expected_clean
+    assert layout == ["\\p"]
 
 
 def test_remove_excess_dynamic_name_keeps_possessive_position():
@@ -487,3 +509,70 @@ def test_setting_names_use_screen_pixel_width_not_character_count():
     text, changed = controlfix.trim_to_pixel_width("Opzioni generali estese", 93)
     assert changed
     assert text == "Opzioni generali"
+
+
+def test_battle_wrapper_reserves_the_actual_move_name_width():
+    widths = {0x14: controlfix.text_pixel_width("Apokalyptische Steinpresse")}
+    text = r"Die Attacke \\14 trifft!"
+    wrapped, changed, long_words = controlfix.wrap_battle_message(text, 208, widths)
+    assert changed
+    assert long_words == 0
+    expanded = wrapped.replace(r"\\14", "Apokalyptische Steinpresse")
+    assert max(map(controlfix.text_pixel_width, expanded.splitlines())) <= 208
+    assert controlfix.controls_match(wrapped, text)
+
+
+def test_battle_runtime_widths_use_effective_names_and_both_move_tokens():
+    widths = controlfix.battle_runtime_widths([
+        {"category": "move_names", "translated": "Langer Name", "translated_fixed": "Kurz"},
+        {"category": "move_names", "translated": "Apokalyptische Steinpresse"},
+        {"category": "trainer_classes", "translated": "Kampfkoryphäe"},
+    ])
+    assert widths[0x14] == widths[0x15] == controlfix.text_pixel_width("Apokalyptische Steinpresse")
+    assert widths[0x1C] == controlfix.text_pixel_width("Kampfkoryphäe")
+
+
+def test_battle_wrapper_scrolls_after_second_visible_line_and_preserves_pages():
+    wrapped, changed, long_words = controlfix.wrap_battle_message(
+        "Erster Zweiter Dritter Vierter", 45
+    )
+    assert changed and long_words == 0
+    assert wrapped == "Erster\nZweiter\\lDritter\\lVierter"
+    wrapped, _, _ = controlfix.wrap_battle_message(
+        r"Erster\nZweiter\lDritter\pVierter", 208
+    )
+    assert wrapped == r"Erster\nZweiter\lDritter\pVierter"
+
+
+def test_frontier_trainer_dialogue_uses_scrolling_pixel_layout():
+    wrapped, changed, long_words, skipped = controlfix.wrap_translation(
+        "Erster Zweiter Dritter Vierter",
+        {"category": "trainer_dialogue"}, "English speech",
+        _args(battle_message_max_pixels=45), {"trainer_dialogue"},
+    )
+    assert changed and not skipped and long_words == 0
+    assert wrapped == "Erster\nZweiter\\lDritter\\lVierter"
+
+
+def test_battle_runtime_widths_cover_second_trainer_partner_and_new_mon_names():
+    widths = controlfix.battle_runtime_widths([
+        {"category": "trainer_classes", "translated": "Kampfkoryphäe"},
+        {"category": "trainer_names", "translated": "Alexandra"},
+    ])
+    assert widths[0x1C] == widths[0x2E] == widths[0x32]
+    assert widths[0x1D] == widths[0x2F] == widths[0x33]
+    assert widths[0x3A] == widths[0x3B] == widths[0x3C] == 90
+
+
+def test_battle_pokemon_ligature_does_not_reset_scroll_row():
+    wrapped, _, _ = controlfix.wrap_battle_message(
+        "Erste\nZweite " + r"\pk\mn" + "\nDritte", 208
+    )
+    assert wrapped == "Erste\nZweite " + r"\pk\mn\lDritte"
+
+
+def test_battle_widths_include_untranslated_names_in_partial_batches():
+    widths = controlfix.battle_runtime_widths([
+        {"category": "move_names", "original": '"A long untranslated move"'},
+    ])
+    assert widths[0x14] == controlfix.text_pixel_width("A long untranslated move")

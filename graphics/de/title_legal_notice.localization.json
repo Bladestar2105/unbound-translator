@@ -1,0 +1,233 @@
+{
+  "asset_id": "title_legal_notice",
+  "language": "de",
+  "status": "localized",
+  "source_sha256": "596c0161fdbf83449fc38a4747881f23069ea3ceae0347e9d15e3b0f7479ccea",
+  "output_sha256": "c041385bcfe2f9f5189b06861f368b43c153a1109502978fcc10e3b5162a0e84",
+  "labels": [
+    {
+      "source": "NOT FOR SALE",
+      "text": "NICHT ZUM VERKAUF",
+      "rect": [
+        10,
+        78,
+        150,
+        26
+      ],
+      "style": "legal",
+      "lines": [
+        {
+          "text": "NICHT ZUM",
+          "x": 14,
+          "y": 80
+        },
+        {
+          "text": "VERKAUF",
+          "x": 14,
+          "y": 90
+        }
+      ],
+      "backing": "Opaque original-letter footprint only: source white/gray indices 4-8 become original black index 9; original gold artwork indices 1-3 and red index 0 preserved exactly. No reconstruction of hidden artwork."
+    }
+  ],
+  "method": "Deterministic masks extracted from source-font indexed pixels; nearest-neighbour scaling, original palette-index outlines. No generated artwork or external font.",
+  "glyph_sources": {
+    "A": {
+      "asset": "pokemon_types",
+      "rect": [
+        21,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "C": {
+      "asset": "pokemon_types",
+      "rect": [
+        17,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "E": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "F": {
+      "asset": "pokemon_types",
+      "rect": [
+        39,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "H": {
+      "asset": "pokemon_types",
+      "rect": [
+        51,
+        50,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "I": {
+      "asset": "pokemon_types",
+      "rect": [
+        44,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "K": {
+      "asset": "pokemon_types",
+      "rect": [
+        53,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "M": {
+      "asset": "pokemon_types",
+      "rect": [
+        16,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "N": {
+      "asset": "pokemon_types",
+      "rect": [
+        1,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "R": {
+      "asset": "pokemon_types",
+      "rect": [
+        11,
+        18,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "T": {
+      "asset": "pokemon_types",
+      "rect": [
+        78,
+        18,
+        3,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "U": {
+      "asset": "pokemon_types",
+      "rect": [
+        80,
+        34,
+        4,
+        7
+      ],
+      "foreground_indices": [
+        15
+      ]
+    },
+    "V": {
+      "asset": "title_legal_notice",
+      "rect": [
+        196,
+        147,
+        4,
+        5
+      ],
+      "foreground_indices": [
+        4
+      ],
+      "transform": "lowercase v source mask, nearest-neighbour height 7"
+    },
+    "Z": {
+      "derived_from": [
+        "E",
+        "N"
+      ],
+      "transform": "source E bars and mirrored N interior diagonal; source N stem pixels at diagonal endpoints"
+    }
+  },
+  "unchanged": "Exact palette and dimensions; all pixels outside label rectangles; all source tilemaps, palette-bank/flip bits, unused tiles, scores, art and credits.",
+  "validation": {
+    "source_roundtrip": "passed",
+    "indexed_png_roundtrip": "passed",
+    "encode_asset": "passed",
+    "shared_tiles": "passed",
+    "changed_pixels": 1813,
+    "parts": [
+      {
+        "offset": "0x1FC08A0",
+        "payload_bytes": 7584,
+        "compressed_bytes": 2568,
+        "original_capacity": 3001,
+        "relocation_required": false,
+        "pointer_sources": [
+          "0x00EC610"
+        ],
+        "sha256": "48b48646a47fccd50f52b1e4cb58d1c9750a98c9ef80ca8640c0a22a5e9879c7"
+      }
+    ],
+    "lz77": "vram_safe=True; decompression roundtrip passed",
+    "visible_art_pixels": "All original indices 0-3 unchanged, asserted across entire canvas",
+    "credits_and_version": "Original pixels outside notice rectangle unchanged",
+    "encoded_tiles_render_roundtrip": "passed; virtual data only, no ROM written",
+    "unused_tiles": "all original bytes preserved",
+    "visual_inspection": "performed on generated native views and enlarged indexed crops",
+    "source_rom_sha256": "7aa25bbf568f7cfcf6ee1cf2e9e6ff637350b3d0705c2375cabb6baa7d9739f7"
+  },
+  "blocker": null,
+  "limitations": [
+    "Runtime reachability is inherited, not re-established; no in-game rendering tested.",
+    "Compact two-line 7px source font. Removed English foreground uses a black footprint mask; artwork previously hidden by English lettering is not reconstructed."
+  ]
+}
