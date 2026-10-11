@@ -136349,7 +136349,7 @@
       "table_name": "data.battle.text.messages.expAndFaint",
       "table_index": 9,
       "translation_source": "[control-code-1]Stop learning [player-name-2]?",
-      "translated": "\\CC0820Erlernen von [player] abbrechen?"
+      "translated": "\\CC0820Erlernen von\n[player]\\labbrechen?"
     },
     {
       "id": "tbl_battle_messages_00011_3FB359",
@@ -137076,7 +137076,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 115,
       "translation_source": "[raw-escape-1] Sketched [raw-escape-2]!",
-      "translated": "\\\\0F\nskizzierte \\\\00!"
+      "translated": "\\\\0F\nskizzierte\\l\\\\00!"
     },
     {
       "id": "tbl_battle_messages_00116_3FBF99",
@@ -137317,7 +137317,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 172,
       "translation_source": "For [raw-escape-1], [raw-escape-2] [raw-escape-3]",
-      "translated": "Für \\\\13,\n\\\\16 \\\\00"
+      "translated": "Für \\\\13,\n\\\\16\\l\\\\00"
     },
     {
       "id": "tbl_battle_messages_00174_3FC631",
@@ -137530,7 +137530,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 245,
       "translation_source": "[control-code-1]Wild [raw-escape-2] fled!",
-      "translated": "\\CC101100Das wilde \\\\00 ist geflohen!"
+      "translated": "\\CC101100Das wilde \\\\00 ist\ngeflohen!"
     },
     {
       "id": "tbl_battle_messages_00246_3FCCE4",
@@ -139100,7 +139100,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 408,
       "translation_source": "What? [buffer1-1] is evolving!",
-      "translated": "Was? [buffer1] entwickelt sich!"
+      "translated": "Was? [buffer1] entwickelt\nsich!"
     },
     {
       "id": "tbl_battle_messages_00410_3FE688",
@@ -186060,7 +186060,7 @@
       "is_pointer_based": true,
       "translation_source": "[raw-escape-1] was cured of its [raw-escape-2] problem!",
       "translated": "\\\\13\nwurde von seinem \\\\00-Problem\\lgeheilt!",
-      "translated_fixed": "\\\\13\nwurde von \\\\00 geheilt!"
+      "translated_fixed": "\\\\13\nwurde von \\\\00\\lgeheilt!"
     },
     {
       "id": "scr_A37A95",
@@ -186074,7 +186074,7 @@
       "is_pointer_based": true,
       "translation_source": "[raw-escape-1] was cured of its [raw-escape-2] problem!",
       "translated": "\\\\11\nwurde von seinem \\\\00-Problem\\lgeheilt!",
-      "translated_fixed": "\\\\11 vom\n\\\\00-Leiden geheilt!"
+      "translated_fixed": "\\\\11 vom\n\\\\00-Leiden\\lgeheilt!"
     },
     {
       "id": "scr_A37B50",
@@ -198997,7 +198997,7 @@
       "is_pointer_based": true,
       "translation_source": "One [raw-escape-1] was taken from [raw-escape-2] and placed in the Cube.",
       "translated": "Ein \\\\16 wurde\naus \\\\00 entnommen und in den\\lWürfel gelegt.",
-      "translated_fixed": "Ein \\\\16 wurde\n\\\\00 genommen und in den Cube\\lgelegt."
+      "translated_fixed": "Ein \\\\16 wurde\n\\\\00 genommen und in den\\lCube\\lgelegt."
     },
     {
       "id": "scr_A4BB88",
@@ -274792,7 +274792,7 @@
       "table_name": "data.battle.text.safariEncounter",
       "table_index": 0,
       "translation_source": "A wild [buffer2-1] appeared!",
-      "translated": "Ein wildes [buffer2] erscheint!"
+      "translated": "Ein wildes [buffer2]\nerscheint!"
     },
     {
       "id": "tbl_battle_messages_00001_1F6822D",
@@ -320524,7 +320524,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 81,
       "translation_source": "[raw-escape-1]’s [raw-escape-2] wore off!",
-      "translated": "\\\\28s \\\\00 ließ\nnach!"
+      "translated": "\\\\28s\n\\\\00 ließ\\lnach!"
     },
     {
       "id": "tbl_battle_messages_00083_3FBC83",
@@ -322724,7 +322724,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 328,
       "translation_source": "[raw-escape-1], that’s enough! Come back!",
-      "translated": "\\\\00, das reicht! Komm zurück!"
+      "translated": "\\\\00, das reicht! Komm\nzurück!"
     },
     {
       "id": "tbl_battle_messages_00329_3FD4EB",
@@ -322786,7 +322786,7 @@
       "table_name": "data.battle.text.messages",
       "table_index": 333,
       "translation_source": "[raw-escape-1] withdrew [raw-escape-2]!",
-      "translated": "\\\\20 rief \\\\00\nzurück!"
+      "translated": "\\\\20 rief\n\\\\00\\lzurück!"
     },
     {
       "id": "tbl_battle_messages_00334_3FD545",
@@ -323441,7 +323441,7 @@
       "table_index": 12,
       "translation_source": "[raw-escape-1] team’s [raw-escape-2] wore off!",
       "translated": "Die Wirkung von \\\\00\nfür\\ldas\\lTeam\\lvon\\l\\\\37 ließ nach!",
-      "translated_fixed": "\\\\37s \\\\00 ließ\nnach!"
+      "translated_fixed": "\\\\37s\n\\\\00 ließ\\lnach!"
     },
     {
       "id": "tbl_battle_messages_00013_A4B39A",
@@ -324030,7 +324030,7 @@
       "table_name": "data.battle.text.messages.expAndFaint",
       "table_index": 4,
       "translation_source": "[raw-escape-1] learned [player-name-2]![text-token-wait-sound-3]",
-      "translated": "\\\\00 hat [player] erlernt![wait_sound]"
+      "translated": "\\\\00 hat\n[player] erlernt![wait_sound]"
     },
     {
       "id": "tbl_battle_messages_00008_3FB31F",
@@ -324045,7 +324045,7 @@
       "table_name": "data.battle.text.messages.expAndFaint",
       "table_index": 8,
       "translation_source": "[raw-escape-1] forgot [player-name-2].",
-      "translated": "\\\\00 vergaß [player]."
+      "translated": "\\\\00 vergaß\n[player]."
     },
     {
       "id": "tbl_battle_messages_00010_3FB343",
@@ -324060,7 +324060,7 @@
       "table_name": "data.battle.text.messages.expAndFaint",
       "table_index": 10,
       "translation_source": "[raw-escape-1] did not learn [player-name-2].",
-      "translated": "\\\\00 hat [player]\\nnicht\\lerlernt."
+      "translated": "\\\\00 hat\n[player]\\lnicht\\lerlernt."
     },
     {
       "id": "tbl_battle_messages_00012_3FB36B",

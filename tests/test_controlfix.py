@@ -532,6 +532,41 @@ def test_battle_runtime_widths_use_effective_names_and_both_move_tokens():
     assert widths[0x1C] == controlfix.text_pixel_width("Kampfkoryphäe")
 
 
+def test_battle_buffers_are_context_specific_not_player_names():
+    entries = [{"category": "move_names", "translated": "Apokalyptische Steinpresse"}]
+    profiles = controlfix.battle_buffer_widths(entries)
+    assert profiles[0x3FB2A4][1] == controlfix.text_pixel_width(entries[0]["translated"])
+    assert profiles[0x3FB2A4][0] == 90
+    assert profiles[0x3FB545][0] == 12
+    assert profiles[0x3FB28E][1] == 18
+    text = r"\\00 hat [player] erlernt!"
+    wrapped, changed, long_words = controlfix.wrap_battle_message(text, 208, profiles[0x3FB2A4])
+    assert changed and not long_words
+    expanded = wrapped.replace(r"\\00", "MMMMMMMMMM").replace("[player]", entries[0]["translated"])
+    import re
+    assert max(controlfix.text_pixel_width(line) for line in re.split(r"\\[nlp]|\n", expanded)) <= 208
+
+
+def test_battle_max_move_width_includes_runtime_prefix():
+    entries = [{"category": "move_names", "table_index": 0x359, "translated": "Brennender Zorn"}]
+    widths = controlfix.battle_runtime_widths(entries)
+    assert widths[0x14] == widths[0x15] == controlfix.text_pixel_width("G-Max Brennender Zorn")
+
+
+def test_proven_pointer_battle_buffers_use_same_wrapper():
+    text = r"wurde von \\00 geheilt!"
+    entry = {"category": "pointer_texts", "address": "0xA37A75"}
+    args = _args(battle_buffer_widths={0xA37A75: {0: 135}}, battle_runtime_widths={})
+    wrapped, changed, long_words, skipped = controlfix.wrap_translation(
+        text, entry, text, args, {"battle_messages"}
+    )
+    assert changed and not long_words and not skipped
+    assert wrapped == r"wurde von \\00" + "\n" + "geheilt!"
+    assert controlfix.wrap_translation(text, entry, text, args, {"scripts"}) == (text, False, 0, False)
+    entry["category"] = "battle_messages"
+    assert controlfix.wrap_translation(text, entry, text, args, {"scripts"}) == (text, False, 0, False)
+
+
 def test_battle_wrapper_scrolls_after_second_visible_line_and_preserves_pages():
     wrapped, changed, long_words = controlfix.wrap_battle_message(
         "Erster Zweiter Dritter Vierter", 45

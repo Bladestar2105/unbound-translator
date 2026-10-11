@@ -599,12 +599,18 @@ def test_ready_german_battle_lines_fit_with_full_named_runtime_values():
     entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
     controlfix = load_script_module("004_controlfix_translations.py", "battle_width_qa")
     widths = controlfix.battle_runtime_widths(entries)
+    profiles = controlfix.battle_buffer_widths(entries)
     for entry in entries:
         if entry["category"] != "battle_messages":
             continue
         effective = INJECTOR.translation_for_injection(entry)
+        entry_widths = {**widths, **profiles.get(INJECTOR.parse_address(entry["address"]), {})}
+        encoded = INJECTOR.Charmap(target_lang="de").encode(effective)
+        for index, byte in enumerate(encoded[:-1]):
+            if byte == 0xFD and encoded[index + 1] in {0, 1, 2, 3, 4, 0x34}:
+                assert entry_widths.get(encoded[index + 1], 0) > 0, entry["id"]
         for line in re.split(r"\\(?:p|n|l)|\n", effective):
-            assert text_pixel_width(line, runtime_widths=widths) <= 208, entry["id"]
+            assert text_pixel_width(line, runtime_widths=entry_widths) <= 208, entry["id"]
 
 
 def test_ready_german_easy_chat_words_fit_single_column():
@@ -656,6 +662,7 @@ def test_ready_german_discovered_battle_messages_fit_named_values():
     entries = json.loads(READY_GERMAN.read_text(encoding="utf-8"))["entries"]
     controlfix = load_script_module("004_controlfix_translations.py", "discovered_battle_qa")
     widths = controlfix.battle_runtime_widths(entries)
+    profiles = controlfix.battle_buffer_widths(entries)
     for entry in entries:
         if entry["category"] != "pointer_texts":
             continue
@@ -663,8 +670,9 @@ def test_ready_german_discovered_battle_messages_fit_named_values():
         if text == INJECTOR.strip_hma_quotes(entry["original"]):
             continue
         if re.search(r"\\{2}[0-3][0-9A-F]", text):
+            entry_widths = {**widths, **profiles.get(INJECTOR.parse_address(entry["address"]), {})}
             for line in re.split(r"\\(?:p|n|l)|\n", text):
-                assert text_pixel_width(line, runtime_widths=widths) <= 208, entry["id"]
+                assert text_pixel_width(line, runtime_widths=entry_widths) <= 208, entry["id"]
 
 
 def test_ready_german_rejects_overlapping_translation_slots():

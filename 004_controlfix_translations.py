@@ -552,6 +552,12 @@ def battle_runtime_widths(entries):
     for entry in entries:
         text = entry.get("translated_fixed") or entry.get("translated") or entry.get("original", "")
         width = text_pixel_width(strip_hma_quotes(text))
+        if entry.get("category") == "move_names":
+            index = entry.get("table_index", -1)
+            if 0x359 <= index <= 0x39A:
+                width += text_pixel_width("G-Max ")
+            elif 0x334 <= index <= 0x358:
+                width += text_pixel_width("Max ")
         for token in categories.get(entry.get("category"), ()):
             widths[token] = max(widths.get(token, 0), width)
         if entry.get("category") == "battle_messages" and strip_hma_quotes(
@@ -567,8 +573,30 @@ def battle_runtime_widths(entries):
         widths[token] = max(widths.get(token, 0), 90)
     for token in (*range(0x28, 0x2E), *range(0x35, 0x39), 0x3D):
         widths[token] = prefix_width
-    # shortcut: generic text buffers keep the shared estimate until their producers are bounded.
     return widths
+
+
+def battle_buffer_widths(entries):
+    """Resolve producer-specific buffers; FD01 is not the player name in battle."""
+    bounds = {"nickname": 90, "raw16": 15 * 9, "number": 10 * 6,
+              "count": 2 * 6, "level": 3 * 6, "stat": 0, "boost": 0}
+    for entry in entries:
+        text = strip_hma_quotes(entry.get("translated_fixed") or entry.get("translated") or entry.get("original", ""))
+        width = text_pixel_width(text)
+        category = entry.get("category")
+        bounds[category] = max(bounds.get(category, 0), width)
+        address = int(entry.get("address", "0"), 16)
+        if 0x3FD590 <= address <= 0x3FD5C1:
+            bounds["stat"] = max(bounds["stat"], width)
+        if address == 0x3FB283:
+            bounds["boost"] = width
+    profiles = json.loads((Path(__file__).parent / "lib/battle_buffer_profiles.json").read_text())["profiles"]
+    result = {}
+    for kind, tokens in profiles.items():
+        for token, addresses in tokens.items():
+            for address in addresses:
+                result.setdefault(int(address, 16), {})[int(token, 16)] = bounds.get(kind, 0)
+    return result
 
 
 def wrap_battle_message(text, max_pixels, runtime_widths=None):
@@ -857,13 +885,21 @@ def restore_battle_prompt_layout(text, _original, entry):
 
 
 def wrap_translation(text, entry, original, args, wrap_categories, preserve_text=False):
-    if args.no_wrap or entry.get("category") not in wrap_categories:
+    buffers = getattr(args, "battle_buffer_widths", {}).get(int(entry.get("address", "0"), 16), {})
+    battle_context = entry.get("category") == "battle_messages" or (
+        entry.get("category") == "pointer_texts" and bool(buffers)
+    )
+    selected_battle_pointer = battle_context and "battle_messages" in wrap_categories
+    if args.no_wrap or (entry.get("category") not in wrap_categories and not selected_battle_pointer):
         return text, False, 0, False
-    if entry.get("category") in {"battle_messages", "trainer_dialogue"}:
+    if battle_context or entry.get("category") == "trainer_dialogue":
         runtime_widths = (
             getattr(args, "battle_runtime_widths", None)
-            if entry.get("category") == "battle_messages" else None
+            if battle_context else None
         )
+        if battle_context:
+            runtime_widths = dict(runtime_widths or {})
+            runtime_widths.update(buffers)
         wrapped, _changed, long_words = wrap_battle_message(
             text, args.battle_message_max_pixels, runtime_widths
         )
@@ -1143,6 +1179,7 @@ def main():
     data = json.loads(Path(args.input).read_text(encoding="utf-8"))
     entries = list(iter_entries(data))
     args.battle_runtime_widths = battle_runtime_widths(entries)
+    args.battle_buffer_widths = battle_buffer_widths(entries)
     originals = source_originals(args.source)
     cmap = Charmap(target_lang="it")
     wrap_categories = {category.strip() for category in args.wrap_categories.split(",") if category.strip()}
